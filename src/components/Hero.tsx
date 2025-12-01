@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, MapPin, Calendar, Users } from "lucide-react";
+import { ArrowRight, MapPin, Calendar } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 
 const Hero = () => {
@@ -58,16 +58,11 @@ const Hero = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16 animate-slide-up" style={{ animationDelay: "0.8s" }}>
+          <div className="grid grid-cols-2 gap-8 max-w-xl mx-auto mt-16 animate-slide-up" style={{ animationDelay: "0.8s" }}>
             <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
               <MapPin className="w-8 h-8 text-secondary mx-auto mb-2" />
               <div className="text-3xl font-bold text-white">1000+</div>
               <div className="text-sm text-white/80">Destinations</div>
-            </div>
-            <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
-              <Users className="w-8 h-8 text-secondary mx-auto mb-2" />
-              <div className="text-3xl font-bold text-white">50K+</div>
-              <div className="text-sm text-white/80">Happy Travelers</div>
             </div>
             <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
               <Calendar className="w-8 h-8 text-secondary mx-auto mb-2" />
