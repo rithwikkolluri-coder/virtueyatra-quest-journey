@@ -57,6 +57,11 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        "travel-teal": "hsl(var(--travel-teal))",
+        "travel-coral": "hsl(var(--travel-coral))",
+        "travel-sand": "hsl(var(--travel-sand))",
+        "travel-earth": "hsl(var(--travel-earth))",
+        "travel-ocean": "hsl(var(--travel-ocean))",
       },
       borderRadius: {
         lg: "var(--radius)",
