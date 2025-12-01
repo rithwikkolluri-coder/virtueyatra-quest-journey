@@ -43,6 +43,10 @@ const Hero = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up" style={{ animationDelay: "0.6s" }}>
             <Button
               size="lg"
+              onClick={() => {
+                const planSection = document.getElementById('plan');
+                planSection?.scrollIntoView({ behavior: 'smooth' });
+              }}
               className="bg-gradient-to-r from-secondary to-accent hover:scale-105 transition-all duration-300 shadow-2xl text-white font-semibold px-8 py-6 text-lg group"
             >
               Start Planning
@@ -51,6 +55,10 @@ const Hero = () => {
             <Button
               size="lg"
               variant="outline"
+              onClick={() => {
+                const destinationsSection = document.getElementById('destinations');
+                destinationsSection?.scrollIntoView({ behavior: 'smooth' });
+              }}
               className="glass-effect border-white/30 text-white hover:bg-white/20 px-8 py-6 text-lg backdrop-blur-xl"
             >
               Explore Destinations
