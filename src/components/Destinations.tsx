@@ -158,8 +158,14 @@ const Destinations = () => {
                       {destination.price}
                     </div>
                   </div>
-                  <Button className="bg-gradient-to-r from-primary to-travel-ocean hover:scale-105 transition-transform">
-                    Explore
+                  <Button
+                    onClick={() => {
+                      const planSection = document.getElementById('plan');
+                      planSection?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="bg-gradient-to-r from-primary to-travel-ocean hover:scale-105 transition-transform"
+                  >
+                    Book Now
                   </Button>
                 </div>
               </div>
