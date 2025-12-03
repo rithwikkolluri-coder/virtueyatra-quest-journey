@@ -4,7 +4,6 @@ import Features from "@/components/Features";
 import Destinations from "@/components/Destinations";
 import Experiences from "@/components/Experiences";
 import TripPlanner from "@/components/TripPlanner";
-import Testimonials from "@/components/Testimonials";
 import Chatbot from "@/components/Chatbot";
 import Footer from "@/components/Footer";
 
@@ -18,7 +17,6 @@ const Index = () => {
         <Destinations />
         <Experiences />
         <TripPlanner />
-        <Testimonials />
       </main>
       <Footer />
       <Chatbot />
