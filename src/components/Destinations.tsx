@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Calendar, TrendingUp } from "lucide-react";
+import { Star, MapPin, TrendingUp } from "lucide-react";
 
 const Destinations = () => {
+  const [activeTab, setActiveTab] = useState("All");
+
+  const tabs = ["All", "Adventure", "Beach", "Culture", "Wildlife", "Nature"];
+
   const destinations = [
     {
       name: "Himalayan Trails",
@@ -13,6 +18,7 @@ const Destinations = () => {
       reviews: 2847,
       price: "₹25,999",
       tags: ["Adventure", "Nature", "Trekking"],
+      category: "Adventure",
       trending: true,
     },
     {
@@ -23,6 +29,7 @@ const Destinations = () => {
       reviews: 1923,
       price: "₹18,499",
       tags: ["Beach", "Relaxation", "Water Sports"],
+      category: "Beach",
       trending: false,
     },
     {
@@ -33,6 +40,7 @@ const Destinations = () => {
       reviews: 3156,
       price: "₹22,999",
       tags: ["Culture", "History", "Architecture"],
+      category: "Culture",
       trending: true,
     },
     {
@@ -43,6 +51,7 @@ const Destinations = () => {
       reviews: 1654,
       price: "₹32,999",
       tags: ["Wildlife", "Photography", "Safari"],
+      category: "Wildlife",
       trending: false,
     },
     {
@@ -53,6 +62,7 @@ const Destinations = () => {
       reviews: 987,
       price: "₹16,999",
       tags: ["Nature", "Peaceful", "Scenic"],
+      category: "Nature",
       trending: false,
     },
     {
@@ -63,15 +73,53 @@ const Destinations = () => {
       reviews: 1432,
       price: "₹21,499",
       tags: ["Adventure", "Culture", "Unique"],
+      category: "Adventure",
       trending: true,
     },
+    {
+      name: "Goa Beaches",
+      location: "Goa",
+      description: "Famous beaches, nightlife, Portuguese architecture, and seafood",
+      rating: 4.7,
+      reviews: 4521,
+      price: "₹15,999",
+      tags: ["Beach", "Nightlife", "Food"],
+      category: "Beach",
+      trending: true,
+    },
+    {
+      name: "Varanasi Ghats",
+      location: "Uttar Pradesh",
+      description: "Spiritual capital of India with ancient ghats and temples",
+      rating: 4.8,
+      reviews: 2134,
+      price: "₹12,999",
+      tags: ["Culture", "Spiritual", "Heritage"],
+      category: "Culture",
+      trending: false,
+    },
+    {
+      name: "Kaziranga Safari",
+      location: "Assam",
+      description: "Home to the one-horned rhinoceros and diverse wildlife",
+      rating: 4.9,
+      reviews: 876,
+      price: "₹28,999",
+      tags: ["Wildlife", "Nature", "Safari"],
+      category: "Wildlife",
+      trending: false,
+    },
   ];
+
+  const filteredDestinations = activeTab === "All" 
+    ? destinations 
+    : destinations.filter(d => d.category === activeTab);
 
   return (
     <section id="destinations" className="py-24 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Section Header */}
-        <div className="text-center mb-16 animate-slide-up">
+        <div className="text-center mb-12 animate-slide-up">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Popular <span className="gradient-text">Destinations</span>
           </h2>
@@ -80,12 +128,30 @@ const Destinations = () => {
           </p>
         </div>
 
+        {/* Filter Tabs */}
+        <div className="flex flex-wrap justify-center gap-3 mb-12">
+          {tabs.map((tab) => (
+            <Button
+              key={tab}
+              variant={activeTab === tab ? "default" : "outline"}
+              onClick={() => setActiveTab(tab)}
+              className={`rounded-full px-6 transition-all duration-300 ${
+                activeTab === tab
+                  ? "bg-gradient-to-r from-primary to-travel-ocean text-white shadow-lg scale-105"
+                  : "border-border hover:border-primary hover:bg-primary/5"
+              }`}
+            >
+              {tab}
+            </Button>
+          ))}
+        </div>
+
         {/* Destinations Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {destinations.map((destination, index) => (
+          {filteredDestinations.map((destination, index) => (
             <Card
-              key={index}
-              className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl bg-card cursor-pointer"
+              key={destination.name}
+              className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl bg-card cursor-pointer animate-slide-up"
               style={{
                 animationDelay: `${index * 0.1}s`,
               }}
@@ -173,16 +239,12 @@ const Destinations = () => {
           ))}
         </div>
 
-        {/* View All Button */}
-        <div className="text-center mt-12">
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
-          >
-            View All Destinations
-          </Button>
-        </div>
+        {/* No Results Message */}
+        {filteredDestinations.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-lg">No destinations found in this category.</p>
+          </div>
+        )}
       </div>
     </section>
   );

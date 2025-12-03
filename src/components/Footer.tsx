@@ -1,4 +1,4 @@
-import { Compass, Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import { Compass, Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 
 const Footer = () => {
   const footerLinks = {
@@ -32,36 +32,16 @@ const Footer = () => {
   return (
     <footer className="bg-gradient-to-b from-background to-muted/50 border-t border-border">
       <div className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand Section */}
-          <div className="lg:col-span-2">
+          <div>
             <div className="flex items-center gap-2 mb-4">
               <Compass className="w-8 h-8 text-primary" />
               <span className="text-2xl font-bold gradient-text">VirtueYatra</span>
             </div>
-            <p className="text-muted-foreground mb-6 max-w-sm">
+            <p className="text-muted-foreground mb-6">
               Your intelligent travel companion for discovering extraordinary destinations and creating unforgettable memories.
             </p>
-            
-            {/* Contact Info */}
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="w-4 h-4 text-primary" />
-                <a href="mailto:hello@virtueyatra.com" className="hover:text-primary transition-colors">
-                  hello@virtueyatra.com
-                </a>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="w-4 h-4 text-primary" />
-                <a href="tel:+911234567890" className="hover:text-primary transition-colors">
-                  +91 123 456 7890
-                </a>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="w-4 h-4 text-primary" />
-                <span>Mumbai, India</span>
-              </div>
-            </div>
           </div>
 
           {/* Links Sections */}
