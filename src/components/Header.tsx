@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Compass, LogOut, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +16,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,10 +28,9 @@ const Header = () => {
   }, []);
 
   const navLinks = [
-    { label: "Destinations", href: "#destinations" },
-    { label: "Experiences", href: "#experiences" },
-    { label: "Plan Trip", href: "#plan" },
-    { label: "About", href: "#about" },
+    { label: t('nav.destinations'), href: "#destinations" },
+    { label: t('nav.experiences'), href: "#experiences" },
+    { label: t('nav.plan'), href: "#plan" },
   ];
 
   const handleSignOut = async () => {
@@ -69,6 +71,7 @@ const Header = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
+            <LanguageSwitcher />
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -80,14 +83,14 @@ const Header = () => {
                 <DropdownMenuContent align="end" className="bg-popover border-border">
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
+                    {t('nav.signOut')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <>
                 <Button variant="ghost" className="hover:bg-primary/10" onClick={() => navigate("/auth")}>
-                  Sign In
+                  {t('nav.signIn')}
                 </Button>
                 <Button 
                   className="bg-gradient-to-r from-primary to-travel-ocean hover:scale-105 transition-transform duration-300 shadow-md"
@@ -127,6 +130,9 @@ const Header = () => {
                   </a>
                 </li>
               ))}
+              <li className="pt-4 border-t border-border">
+                <LanguageSwitcher />
+              </li>
               <li className="pt-4 border-t border-border space-y-3">
                 {user ? (
                   <>
@@ -135,13 +141,13 @@ const Header = () => {
                     </p>
                     <Button variant="ghost" className="w-full hover:bg-primary/10" onClick={handleSignOut}>
                       <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
+                      {t('nav.signOut')}
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button variant="ghost" className="w-full hover:bg-primary/10" onClick={() => { navigate("/auth"); setIsMobileMenuOpen(false); }}>
-                      Sign In
+                      {t('nav.signIn')}
                     </Button>
                     <Button className="w-full bg-gradient-to-r from-primary to-travel-ocean" onClick={() => { navigate("/auth"); setIsMobileMenuOpen(false); }}>
                       Get Started
