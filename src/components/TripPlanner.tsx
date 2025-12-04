@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, MapPin, Users, DollarSign, Sparkles, Check, ArrowLeft } from "lucide-react";
+import { Calendar, MapPin, Users, DollarSign, Sparkles, Check, ArrowLeft, History, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TripSummary {
   destination: string;
@@ -18,10 +20,26 @@ interface TripSummary {
   specialRequests: string;
 }
 
+interface SavedTrip {
+  id: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  travelers: number;
+  budget: string;
+  interests: string[];
+  special_requests: string | null;
+  created_at: string;
+}
+
 const TripPlanner = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [showSummary, setShowSummary] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [tripSummary, setTripSummary] = useState<TripSummary | null>(null);
+  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     destination: "",
     startDate: "",
@@ -44,6 +62,27 @@ const TripPlanner = () => {
     premium: "Premium (₹1L+)",
   };
 
+  useEffect(() => {
+    if (user) {
+      fetchSavedTrips();
+    }
+  }, [user]);
+
+  const fetchSavedTrips = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('trips')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching trips:', error);
+    } else {
+      setSavedTrips(data || []);
+    }
+  };
+
   const toggleInterest = (interest: string) => {
     setFormData(prev => ({
       ...prev,
@@ -53,7 +92,7 @@ const TripPlanner = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.destination || !formData.startDate || !formData.endDate) {
@@ -65,13 +104,62 @@ const TripPlanner = () => {
       return;
     }
 
+    setLoading(true);
+
+    // Save to database if user is logged in
+    if (user) {
+      const { error } = await supabase.from('trips').insert({
+        user_id: user.id,
+        destination: formData.destination,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        travelers: parseInt(formData.travelers),
+        budget: formData.budget || 'budget',
+        interests: formData.interests,
+        special_requests: formData.specialRequests || null,
+      });
+
+      if (error) {
+        toast({
+          title: "Error saving trip",
+          description: error.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      fetchSavedTrips();
+    }
+
     setTripSummary(formData);
     setShowSummary(true);
+    setLoading(false);
 
     toast({
       title: "Trip Plan Created! 🎉",
-      description: `Your personalized itinerary for ${formData.destination} is ready!`,
+      description: user 
+        ? `Your trip to ${formData.destination} has been saved!`
+        : `Your itinerary for ${formData.destination} is ready! Sign in to save your trips.`,
     });
+  };
+
+  const handleDeleteTrip = async (tripId: string) => {
+    const { error } = await supabase.from('trips').delete().eq('id', tripId);
+    
+    if (error) {
+      toast({
+        title: "Error deleting trip",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Trip deleted",
+        description: "Your trip has been removed from history.",
+      });
+      fetchSavedTrips();
+    }
   };
 
   const handleNewTrip = () => {
@@ -97,6 +185,14 @@ const TripPlanner = () => {
     });
   };
 
+  const formatShortDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   return (
     <section id="plan" className="py-24 bg-gradient-to-b from-background to-muted/30">
       <div className="container mx-auto px-4">
@@ -112,7 +208,70 @@ const TripPlanner = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Let our AI assistant create a personalized itinerary based on your preferences
           </p>
+          
+          {user && savedTrips.length > 0 && (
+            <Button
+              variant="outline"
+              className="mt-6"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <History className="w-4 h-4 mr-2" />
+              {showHistory ? 'Hide' : 'View'} Booking History ({savedTrips.length})
+            </Button>
+          )}
         </div>
+
+        {/* Booking History */}
+        {showHistory && user && savedTrips.length > 0 && (
+          <div className="max-w-4xl mx-auto mb-12 animate-slide-up">
+            <h3 className="text-2xl font-bold mb-6">Your Booking History</h3>
+            <div className="grid gap-4">
+              {savedTrips.map((trip) => (
+                <Card key={trip.id} className="p-6 border-border/50 bg-card/80 backdrop-blur-sm">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MapPin className="w-5 h-5 text-primary" />
+                        <h4 className="text-lg font-semibold">{trip.destination}</h4>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {formatShortDate(trip.start_date)} - {formatShortDate(trip.end_date)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {trip.travelers} {trip.travelers === 1 ? 'traveler' : 'travelers'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4" />
+                          {budgetLabels[trip.budget] || trip.budget}
+                        </span>
+                      </div>
+                      {trip.interests && trip.interests.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {trip.interests.map((interest) => (
+                            <span key={interest} className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
+                              {interest}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDeleteTrip(trip.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="max-w-4xl mx-auto">
           {showSummary && tripSummary ? (
@@ -123,7 +282,9 @@ const TripPlanner = () => {
                   <Check className="w-10 h-10 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold gradient-text mb-2">Your Trip is Planned!</h3>
-                <p className="text-muted-foreground">Here's a summary of your trip details</p>
+                <p className="text-muted-foreground">
+                  {user ? "Your trip has been saved to your booking history" : "Sign in to save your trips"}
+                </p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -336,11 +497,18 @@ const TripPlanner = () => {
                 <Button
                   type="submit"
                   size="lg"
+                  disabled={loading}
                   className="w-full bg-gradient-to-r from-primary to-travel-ocean hover:scale-105 transition-all duration-300 shadow-lg text-lg py-6"
                 >
                   <Sparkles className="mr-2 w-5 h-5" />
-                  Create My Itinerary
+                  {loading ? 'Creating...' : 'Create My Itinerary'}
                 </Button>
+
+                {!user && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Sign in to save your trips and view booking history
+                  </p>
+                )}
               </form>
             </Card>
           )}
