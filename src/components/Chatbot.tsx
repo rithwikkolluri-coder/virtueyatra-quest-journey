@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bot, Send, X, MessageCircle } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Message {
   text: string;
@@ -12,15 +13,22 @@ interface Message {
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      text: "Hello! 👋 I'm your VirtueYatra travel assistant. How can I help you plan your perfect trip today?",
-      isBot: true,
-      timestamp: new Date(),
-    }
-  ]);
+  const { t } = useLanguage();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!initialized) {
+      setMessages([{
+        text: t('chatbot.greeting'),
+        isBot: true,
+        timestamp: new Date(),
+      }]);
+      setInitialized(true);
+    }
+  }, [t, initialized]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -33,32 +41,32 @@ const Chatbot = () => {
   const getBotResponse = (userMessage: string): string => {
     const lowerMessage = userMessage.toLowerCase();
     
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-      return "Hello! I'm excited to help you discover amazing destinations. What kind of experience are you looking for?";
+    if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("नमस्ते") || lowerMessage.includes("నమస్కారం")) {
+      return t('chatbot.response.hello');
     }
-    if (lowerMessage.includes("beach") || lowerMessage.includes("coastal")) {
-      return "Our Coastal Paradise destinations are perfect for beach lovers! With crystal clear waters and golden sands, you'll find relaxation and adventure. The package starts from ₹18,499. Would you like to know more?";
+    if (lowerMessage.includes("beach") || lowerMessage.includes("coastal") || lowerMessage.includes("समुद्र") || lowerMessage.includes("బీచ్")) {
+      return t('chatbot.response.beach');
     }
-    if (lowerMessage.includes("mountain") || lowerMessage.includes("himalaya")) {
-      return "The Himalayan Trails offer breathtaking mountain vistas and adventure sports! It's perfect for trekking and experiencing serene monasteries. Packages start from ₹25,999. Interested in booking?";
+    if (lowerMessage.includes("mountain") || lowerMessage.includes("himalaya") || lowerMessage.includes("पहाड़") || lowerMessage.includes("పర్వతం")) {
+      return t('chatbot.response.mountain');
     }
-    if (lowerMessage.includes("budget") || lowerMessage.includes("price")) {
-      return "We have options for every budget! Our packages range from ₹16,999 to ₹32,999. Budget travelers love our Tea Gardens package at ₹16,999, while adventure seekers enjoy the Wildlife Safari at ₹32,999. What's your budget range?";
+    if (lowerMessage.includes("budget") || lowerMessage.includes("price") || lowerMessage.includes("बजट") || lowerMessage.includes("బడ్జెట్")) {
+      return t('chatbot.response.budget');
     }
-    if (lowerMessage.includes("wildlife") || lowerMessage.includes("safari")) {
-      return "Our Wildlife Safari packages offer incredible encounters with majestic tigers, elephants, and rare wildlife in their natural habitat. Perfect for photographers! Starting at ₹32,999. Shall I help you plan this adventure?";
+    if (lowerMessage.includes("wildlife") || lowerMessage.includes("safari") || lowerMessage.includes("वन्यजीव") || lowerMessage.includes("వన్యప్రాణి")) {
+      return t('chatbot.response.wildlife');
     }
-    if (lowerMessage.includes("book") || lowerMessage.includes("reserve")) {
-      return "Great! To book your trip, I recommend using our Trip Planner below. Just fill in your details, and we'll create a personalized itinerary for you. You can also click 'Explore' on any destination card for quick booking!";
+    if (lowerMessage.includes("book") || lowerMessage.includes("reserve") || lowerMessage.includes("बुक") || lowerMessage.includes("బుక్")) {
+      return t('chatbot.response.book');
     }
-    if (lowerMessage.includes("culture") || lowerMessage.includes("heritage")) {
-      return "Our Heritage Wonders tour takes you through ancient temples, royal palaces, and rich cultural traditions. It's rated 4.7 stars with over 3,000 reviews! Starting from ₹22,999. Would you like more details?";
+    if (lowerMessage.includes("culture") || lowerMessage.includes("heritage") || lowerMessage.includes("संस्कृति") || lowerMessage.includes("సంస్కృతి")) {
+      return t('chatbot.response.culture');
     }
-    if (lowerMessage.includes("thank")) {
-      return "You're very welcome! If you need any more help planning your trip, I'm always here. Happy travels! 🌍✈️";
+    if (lowerMessage.includes("thank") || lowerMessage.includes("धन्यवाद") || lowerMessage.includes("ధన్యవాదాలు")) {
+      return t('chatbot.response.thank');
     }
     
-    return "That's a great question! I can help you with destinations, pricing, booking information, and travel recommendations. Feel free to ask about beaches, mountains, wildlife, cultural experiences, or any specific travel needs!";
+    return t('chatbot.response.default');
   };
 
   const handleSend = () => {
@@ -115,8 +123,8 @@ const Chatbot = () => {
                 <Bot className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-white">VirtueYatra Assistant</h3>
-                <p className="text-xs text-white/80">Always here to help</p>
+                <h3 className="font-semibold text-white">{t('chatbot.title')}</h3>
+                <p className="text-xs text-white/80">{t('chatbot.subtitle')}</p>
               </div>
             </div>
             <Button
@@ -160,7 +168,7 @@ const Chatbot = () => {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask me anything..."
+                placeholder={t('chatbot.placeholder')}
                 className="flex-1 border-border/50 focus:border-primary"
               />
               <Button
