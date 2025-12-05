@@ -1,42 +1,45 @@
 import { Card } from "@/components/ui/card";
 import { Bot, Map, Sparkles, Shield, Globe, Heart } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Features = () => {
+  const { t } = useLanguage();
+
   const features = [
     {
       icon: Bot,
-      title: "AI Travel Assistant",
-      description: "Get personalized recommendations and instant answers to all your travel questions",
+      titleKey: "features.aiAssistant",
+      descKey: "features.aiAssistant.desc",
       gradient: "from-primary to-travel-ocean",
     },
     {
       icon: Map,
-      title: "Smart Itinerary Planning",
-      description: "Create perfect travel plans with AI-optimized routes and schedules",
+      titleKey: "features.smartItinerary",
+      descKey: "features.smartItinerary.desc",
       gradient: "from-secondary to-accent",
     },
     {
       icon: Sparkles,
-      title: "Immersive Experiences",
-      description: "Preview destinations with AR/VR technology before you visit",
+      titleKey: "features.immersive",
+      descKey: "features.immersive.desc",
       gradient: "from-travel-teal to-primary",
     },
     {
       icon: Shield,
-      title: "Safe & Secure",
-      description: "Travel with confidence with our verified partners and secure booking",
+      titleKey: "features.safeSec",
+      descKey: "features.safeSec.desc",
       gradient: "from-accent to-secondary",
     },
     {
       icon: Globe,
-      title: "Global Coverage",
-      description: "Explore destinations across continents with local insights",
+      titleKey: "features.globalCoverage",
+      descKey: "features.globalCoverage.desc",
       gradient: "from-travel-ocean to-travel-teal",
     },
     {
       icon: Heart,
-      title: "Personalized Just for You",
-      description: "Tailored recommendations based on your preferences and travel style",
+      titleKey: "features.personalized",
+      descKey: "features.personalized.desc",
       gradient: "from-secondary to-travel-coral",
     },
   ];
@@ -47,11 +50,11 @@ const Features = () => {
         {/* Section Header */}
         <div className="text-center mb-16 animate-slide-up">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Why Choose{" "}
-            <span className="gradient-text">VirtueYatra</span>
+            {t('features.title')}{" "}
+            <span className="gradient-text">{t('features.titleHighlight')}</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Experience travel planning reimagined with cutting-edge technology and personalized service
+            {t('features.subtitle')}
           </p>
         </div>
 
@@ -78,10 +81,10 @@ const Features = () => {
 
                   {/* Content */}
                   <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
-                    {feature.title}
+                    {t(feature.titleKey)}
                   </h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    {feature.description}
+                    {t(feature.descKey)}
                   </p>
 
                   {/* Decorative Element */}

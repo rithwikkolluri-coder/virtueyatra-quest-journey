@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Calendar } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Hero = () => {
+  const { t } = useLanguage();
+
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -23,20 +26,20 @@ const Hero = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 glass-effect px-6 py-3 rounded-full mb-8 animate-slide-up">
             <MapPin className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium">Explore 1000+ Destinations</span>
+            <span className="text-sm font-medium">{t('hero.badge')}</span>
           </div>
 
           {/* Main Heading */}
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            Discover Your Next
+            {t('hero.title1')}
             <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-secondary to-accent">
-              Adventure Awaits
+              {t('hero.title2')}
             </span>
           </h1>
 
           {/* Subheading */}
           <p className="text-lg md:text-xl text-white/90 mb-12 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: "0.4s" }}>
-            Embark on extraordinary journeys with AI-powered travel planning, personalized itineraries, and immersive experiences
+            {t('hero.subtitle')}
           </p>
 
           {/* CTA Buttons */}
@@ -49,7 +52,7 @@ const Hero = () => {
               }}
               className="bg-gradient-to-r from-secondary to-accent hover:scale-105 transition-all duration-300 shadow-2xl text-white font-semibold px-8 py-6 text-lg group"
             >
-              Start Planning
+              {t('hero.startPlanning')}
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button
@@ -61,7 +64,7 @@ const Hero = () => {
               }}
               className="glass-effect border-white/30 text-white hover:bg-white/20 px-8 py-6 text-lg backdrop-blur-xl"
             >
-              Explore Destinations
+              {t('hero.exploreDestinations')}
             </Button>
           </div>
 
@@ -70,12 +73,12 @@ const Hero = () => {
             <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
               <MapPin className="w-8 h-8 text-secondary mx-auto mb-2" />
               <div className="text-3xl font-bold text-white">1000+</div>
-              <div className="text-sm text-white/80">Destinations</div>
+              <div className="text-sm text-white/80">{t('hero.destinations')}</div>
             </div>
             <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
               <Calendar className="w-8 h-8 text-secondary mx-auto mb-2" />
               <div className="text-3xl font-bold text-white">24/7</div>
-              <div className="text-sm text-white/80">Support</div>
+              <div className="text-sm text-white/80">{t('hero.support')}</div>
             </div>
           </div>
         </div>

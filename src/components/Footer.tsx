@@ -1,24 +1,27 @@
 import { Compass, Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Footer = () => {
+  const { t } = useLanguage();
+
   const footerLinks = {
     company: [
-      { label: "About Us", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Press", href: "#" },
-      { label: "Blog", href: "#" },
+      { labelKey: "footer.aboutUs", href: "#" },
+      { labelKey: "footer.careers", href: "#" },
+      { labelKey: "footer.press", href: "#" },
+      { labelKey: "footer.blog", href: "#" },
     ],
     support: [
-      { label: "Help Center", href: "#" },
-      { label: "Safety", href: "#" },
-      { label: "Terms of Service", href: "#" },
-      { label: "Privacy Policy", href: "#" },
+      { labelKey: "footer.helpCenter", href: "#" },
+      { labelKey: "footer.safety", href: "#" },
+      { labelKey: "footer.termsOfService", href: "#" },
+      { labelKey: "footer.privacyPolicy", href: "#" },
     ],
     discover: [
-      { label: "Destinations", href: "#destinations" },
-      { label: "Experiences", href: "#experiences" },
-      { label: "Travel Guides", href: "#" },
-      { label: "Gift Cards", href: "#" },
+      { labelKey: "footer.destinations", href: "#destinations" },
+      { labelKey: "footer.experiences", href: "#experiences" },
+      { labelKey: "footer.travelGuides", href: "#" },
+      { labelKey: "footer.giftCards", href: "#" },
     ],
   };
 
@@ -40,21 +43,21 @@ const Footer = () => {
               <span className="text-2xl font-bold gradient-text">VirtueYatra</span>
             </div>
             <p className="text-muted-foreground mb-6">
-              Your intelligent travel companion for discovering extraordinary destinations and creating unforgettable memories.
+              {t('footer.tagline')}
             </p>
           </div>
 
           {/* Links Sections */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Company</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('footer.company')}</h3>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
-                <li key={link.label}>
+                <li key={link.labelKey}>
                   <a
                     href={link.href}
                     className="text-muted-foreground hover:text-primary transition-colors text-sm"
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </a>
                 </li>
               ))}
@@ -62,15 +65,15 @@ const Footer = () => {
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Support</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('footer.support')}</h3>
             <ul className="space-y-3">
               {footerLinks.support.map((link) => (
-                <li key={link.label}>
+                <li key={link.labelKey}>
                   <a
                     href={link.href}
                     className="text-muted-foreground hover:text-primary transition-colors text-sm"
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </a>
                 </li>
               ))}
@@ -78,15 +81,15 @@ const Footer = () => {
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Discover</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('footer.discover')}</h3>
             <ul className="space-y-3">
               {footerLinks.discover.map((link) => (
-                <li key={link.label}>
+                <li key={link.labelKey}>
                   <a
                     href={link.href}
                     className="text-muted-foreground hover:text-primary transition-colors text-sm"
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </a>
                 </li>
               ))}
@@ -97,7 +100,7 @@ const Footer = () => {
         {/* Social Links */}
         <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-border gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 VirtueYatra. All rights reserved.
+            © 2024 VirtueYatra. {t('footer.rights')}
           </p>
           
           <div className="flex items-center gap-4">

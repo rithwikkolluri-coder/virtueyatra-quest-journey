@@ -3,109 +3,118 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, TrendingUp } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Destinations = () => {
   const [activeTab, setActiveTab] = useState("All");
+  const { t } = useLanguage();
 
-  const tabs = ["All", "Adventure", "Beach", "Culture", "Wildlife", "Nature"];
+  const tabs = [
+    { key: "All", label: t('destinations.all') },
+    { key: "Adventure", label: t('tag.adventure') },
+    { key: "Beach", label: t('tag.beach') },
+    { key: "Culture", label: t('tag.culture') },
+    { key: "Wildlife", label: t('tag.wildlife') },
+    { key: "Nature", label: t('tag.nature') },
+  ];
 
   const destinations = [
     {
-      name: "Himalayan Trails",
-      location: "Northern Mountains",
-      description: "Experience breathtaking mountain vistas, serene monasteries, and adventure sports",
+      nameKey: "dest.himalayanTrails",
+      locationKey: "dest.himalayanTrails.location",
+      descKey: "dest.himalayanTrails.desc",
       rating: 4.9,
       reviews: 2847,
       price: "₹25,999",
-      tags: ["Adventure", "Nature", "Trekking"],
+      tags: ["tag.adventure", "tag.nature", "tag.trekking"],
       category: "Adventure",
       trending: true,
     },
     {
-      name: "Coastal Paradise",
-      location: "Southern Beaches",
-      description: "Crystal clear waters, golden sands, and vibrant marine life await",
+      nameKey: "dest.coastalParadise",
+      locationKey: "dest.coastalParadise.location",
+      descKey: "dest.coastalParadise.desc",
       rating: 4.8,
       reviews: 1923,
       price: "₹18,499",
-      tags: ["Beach", "Relaxation", "Water Sports"],
+      tags: ["tag.beach", "tag.relaxation", "tag.waterSports"],
       category: "Beach",
       trending: false,
     },
     {
-      name: "Heritage Wonders",
-      location: "Cultural Heartland",
-      description: "Explore ancient temples, royal palaces, and rich cultural traditions",
+      nameKey: "dest.heritageWonders",
+      locationKey: "dest.heritageWonders.location",
+      descKey: "dest.heritageWonders.desc",
       rating: 4.7,
       reviews: 3156,
       price: "₹22,999",
-      tags: ["Culture", "History", "Architecture"],
+      tags: ["tag.culture", "tag.history", "tag.architecture"],
       category: "Culture",
       trending: true,
     },
     {
-      name: "Wildlife Safari",
-      location: "National Parks",
-      description: "Encounter majestic tigers, elephants, and rare wildlife in their natural habitat",
+      nameKey: "dest.wildlifeSafari",
+      locationKey: "dest.wildlifeSafari.location",
+      descKey: "dest.wildlifeSafari.desc",
       rating: 4.9,
       reviews: 1654,
       price: "₹32,999",
-      tags: ["Wildlife", "Photography", "Safari"],
+      tags: ["tag.wildlife", "tag.photography", "tag.safari"],
       category: "Wildlife",
       trending: false,
     },
     {
-      name: "Tea Gardens",
-      location: "Hill Stations",
-      description: "Rolling tea plantations, misty hills, and colonial charm",
+      nameKey: "dest.teaGardens",
+      locationKey: "dest.teaGardens.location",
+      descKey: "dest.teaGardens.desc",
       rating: 4.6,
       reviews: 987,
       price: "₹16,999",
-      tags: ["Nature", "Peaceful", "Scenic"],
+      tags: ["tag.nature", "tag.peaceful", "tag.scenic"],
       category: "Nature",
       trending: false,
     },
     {
-      name: "Desert Adventure",
-      location: "Western Deserts",
-      description: "Experience camel safaris, sand dunes, and starlit desert nights",
+      nameKey: "dest.desertAdventure",
+      locationKey: "dest.desertAdventure.location",
+      descKey: "dest.desertAdventure.desc",
       rating: 4.8,
       reviews: 1432,
       price: "₹21,499",
-      tags: ["Adventure", "Culture", "Unique"],
+      tags: ["tag.adventure", "tag.culture", "tag.unique"],
       category: "Adventure",
       trending: true,
     },
     {
-      name: "Goa Beaches",
-      location: "Goa",
-      description: "Famous beaches, nightlife, Portuguese architecture, and seafood",
+      nameKey: "dest.goaBeaches",
+      locationKey: "dest.goaBeaches.location",
+      descKey: "dest.goaBeaches.desc",
       rating: 4.7,
       reviews: 4521,
       price: "₹15,999",
-      tags: ["Beach", "Nightlife", "Food"],
+      tags: ["tag.beach", "tag.nightlife", "tag.food"],
       category: "Beach",
       trending: true,
     },
     {
-      name: "Varanasi Ghats",
-      location: "Uttar Pradesh",
-      description: "Spiritual capital of India with ancient ghats and temples",
+      nameKey: "dest.varanasiGhats",
+      locationKey: "dest.varanasiGhats.location",
+      descKey: "dest.varanasiGhats.desc",
       rating: 4.8,
       reviews: 2134,
       price: "₹12,999",
-      tags: ["Culture", "Spiritual", "Heritage"],
+      tags: ["tag.culture", "tag.spiritual", "tag.heritage"],
       category: "Culture",
       trending: false,
     },
     {
-      name: "Kaziranga Safari",
-      location: "Assam",
-      description: "Home to the one-horned rhinoceros and diverse wildlife",
+      nameKey: "dest.kazirangaSafari",
+      locationKey: "dest.kazirangaSafari.location",
+      descKey: "dest.kazirangaSafari.desc",
       rating: 4.9,
       reviews: 876,
       price: "₹28,999",
-      tags: ["Wildlife", "Nature", "Safari"],
+      tags: ["tag.wildlife", "tag.nature", "tag.safari"],
       category: "Wildlife",
       trending: false,
     },
@@ -121,10 +130,10 @@ const Destinations = () => {
         {/* Section Header */}
         <div className="text-center mb-12 animate-slide-up">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Popular <span className="gradient-text">Destinations</span>
+            {t('destinations.title')} <span className="gradient-text">{t('destinations.titleHighlight')}</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Handpicked destinations that promise unforgettable experiences
+            {t('destinations.subtitle')}
           </p>
         </div>
 
@@ -132,16 +141,16 @@ const Destinations = () => {
         <div className="flex flex-wrap justify-center gap-3 mb-12">
           {tabs.map((tab) => (
             <Button
-              key={tab}
-              variant={activeTab === tab ? "default" : "outline"}
-              onClick={() => setActiveTab(tab)}
+              key={tab.key}
+              variant={activeTab === tab.key ? "default" : "outline"}
+              onClick={() => setActiveTab(tab.key)}
               className={`rounded-full px-6 transition-all duration-300 ${
-                activeTab === tab
+                activeTab === tab.key
                   ? "bg-gradient-to-r from-primary to-travel-ocean text-white shadow-lg scale-105"
                   : "border-border hover:border-primary hover:bg-primary/5"
               }`}
             >
-              {tab}
+              {tab.label}
             </Button>
           ))}
         </div>
@@ -150,7 +159,7 @@ const Destinations = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredDestinations.map((destination, index) => (
             <Card
-              key={destination.name}
+              key={destination.nameKey}
               className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl bg-card cursor-pointer animate-slide-up"
               style={{
                 animationDelay: `${index * 0.1}s`,
@@ -166,7 +175,7 @@ const Destinations = () => {
                 {destination.trending && (
                   <div className="absolute top-4 right-4 flex items-center gap-1 bg-secondary text-white px-3 py-1.5 rounded-full text-xs font-semibold">
                     <TrendingUp className="w-3 h-3" />
-                    Trending
+                    {t('destinations.trending')}
                   </div>
                 )}
 
@@ -179,28 +188,28 @@ const Destinations = () => {
                 {/* Location */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                   <MapPin className="w-4 h-4" />
-                  {destination.location}
+                  {t(destination.locationKey)}
                 </div>
 
                 {/* Title */}
                 <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
-                  {destination.name}
+                  {t(destination.nameKey)}
                 </h3>
 
                 {/* Description */}
                 <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                  {destination.description}
+                  {t(destination.descKey)}
                 </p>
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {destination.tags.map((tag) => (
+                  {destination.tags.map((tagKey) => (
                     <Badge
-                      key={tag}
+                      key={tagKey}
                       variant="secondary"
                       className="bg-primary/10 text-primary hover:bg-primary/20"
                     >
-                      {tag}
+                      {t(tagKey)}
                     </Badge>
                   ))}
                 </div>
@@ -212,14 +221,14 @@ const Destinations = () => {
                     <span className="font-semibold">{destination.rating}</span>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    ({destination.reviews.toLocaleString()} reviews)
+                    ({destination.reviews.toLocaleString()} {t('destinations.reviews')})
                   </span>
                 </div>
 
                 {/* Price and CTA */}
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div>
-                    <div className="text-xs text-muted-foreground">Starting from</div>
+                    <div className="text-xs text-muted-foreground">{t('destinations.startingFrom')}</div>
                     <div className="text-2xl font-bold text-secondary">
                       {destination.price}
                     </div>
@@ -231,7 +240,7 @@ const Destinations = () => {
                     }}
                     className="bg-gradient-to-r from-primary to-travel-ocean hover:scale-105 transition-transform"
                   >
-                    Book Now
+                    {t('destinations.bookNow')}
                   </Button>
                 </div>
               </div>
@@ -242,7 +251,7 @@ const Destinations = () => {
         {/* No Results Message */}
         {filteredDestinations.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">No destinations found in this category.</p>
+            <p className="text-muted-foreground text-lg">{t('destinations.noResults')}</p>
           </div>
         )}
       </div>
