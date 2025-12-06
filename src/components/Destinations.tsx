@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, TrendingUp } from "lucide-react";
+import { MapPin, TrendingUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Destinations = () => {
@@ -214,25 +214,8 @@ const Destinations = () => {
                   ))}
                 </div>
 
-                {/* Rating and Reviews */}
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-secondary text-secondary" />
-                    <span className="font-semibold">{destination.rating}</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    ({destination.reviews.toLocaleString()} {t('destinations.reviews')})
-                  </span>
-                </div>
-
-                {/* Price and CTA */}
-                <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <div>
-                    <div className="text-xs text-muted-foreground">{t('destinations.startingFrom')}</div>
-                    <div className="text-2xl font-bold text-secondary">
-                      {destination.price}
-                    </div>
-                  </div>
+                {/* CTA */}
+                <div className="pt-4 border-t border-border">
                   <Button
                     onClick={() => {
                       const planSection = document.getElementById('plan');
