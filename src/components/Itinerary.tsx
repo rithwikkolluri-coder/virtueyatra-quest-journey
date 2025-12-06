@@ -137,6 +137,586 @@ const Itinerary = ({ destination, startDate, endDate, interests }: ItineraryProp
         "Rooftop dining at Lake Pichola - Romantic candlelit dinner",
         "Evening stroll along Gangaur Ghat"
       ]
+    },
+    "Mumbai": {
+      morning: [
+        "Visit Gateway of India - Iconic colonial monument at Apollo Bunder",
+        "Explore Elephanta Caves - UNESCO World Heritage rock-cut temples on the island",
+        "Tour Chhatrapati Shivaji Terminus - Victorian Gothic railway station",
+        "Walk along Marine Drive - The famous Queen's Necklace promenade"
+      ],
+      afternoon: [
+        "Visit Siddhivinayak Temple - One of Mumbai's most revered temples",
+        "Explore Dharavi - Asia's largest slum and industrial hub tour",
+        "Shop at Colaba Causeway - Street shopping for clothes and accessories",
+        "Tour Dhobi Ghat - World's largest open-air laundry"
+      ],
+      evening: [
+        "Sunset at Juhu Beach - Street food and ocean views",
+        "Dinner at Leopold Cafe - Historic colonial-era restaurant",
+        "Night drive on Marine Drive - See the sparkling Queen's Necklace",
+        "Explore Bandra-Worli Sea Link and Bandstand Promenade"
+      ]
+    },
+    "Delhi": {
+      morning: [
+        "Visit Red Fort - UNESCO World Heritage Mughal fortress",
+        "Explore Qutub Minar - 73-meter tall victory tower from the 12th century",
+        "Tour Humayun's Tomb - Magnificent Mughal garden tomb",
+        "Walk through Chandni Chowk - Old Delhi's bustling market street"
+      ],
+      afternoon: [
+        "Visit India Gate - War memorial and Rajpath promenade",
+        "Explore Lotus Temple - Stunning Bahá'í House of Worship",
+        "Tour Akshardham Temple - Modern Hindu temple complex with boat ride",
+        "Shop at Connaught Place - Colonial-era shopping arcade"
+      ],
+      evening: [
+        "Sound and light show at Red Fort - History comes alive",
+        "Street food tour at Paranthe Wali Gali - Famous for stuffed parathas",
+        "Evening at Hauz Khas Village - Cafes, boutiques, and ancient ruins",
+        "Dinner at Khan Market - Premium dining and shopping"
+      ]
+    },
+    "Agra": {
+      morning: [
+        "Sunrise at Taj Mahal - Witness the marble wonder in golden light",
+        "Explore Agra Fort - UNESCO World Heritage red sandstone fortress",
+        "Visit Mehtab Bagh - Gardens with stunning Taj Mahal views across Yamuna",
+        "Tour Itmad-ud-Daulah's Tomb - Baby Taj with exquisite marble inlay"
+      ],
+      afternoon: [
+        "Visit Fatehpur Sikri - Abandoned Mughal capital city",
+        "Shop at Sadar Bazaar - Marble handicrafts and leather goods",
+        "Explore Jama Masjid - One of India's largest mosques",
+        "Tour Akbar's Tomb at Sikandra - Unique architectural blend"
+      ],
+      evening: [
+        "Sunset view of Taj Mahal from Agra Fort - Romantic panorama",
+        "Dinner at Peshawri, ITC Mughal - Authentic North Indian cuisine",
+        "Cultural show Mohabbat the Taj - Dance drama about Shah Jahan",
+        "Evening stroll along Yamuna riverfront"
+      ]
+    },
+    "Shimla": {
+      morning: [
+        "Walk on The Mall Road - Colonial-era pedestrian street with shops",
+        "Visit Christ Church - Second oldest church in North India",
+        "Explore The Ridge - Open space with views of snow-capped mountains",
+        "Tour Viceregal Lodge - British-era summer residence"
+      ],
+      afternoon: [
+        "Ride the Toy Train to Kalka - UNESCO World Heritage railway",
+        "Visit Jakhoo Temple - Hanuman temple atop the highest peak",
+        "Explore Kufri - Hill station with adventure activities",
+        "Tour Himalayan Bird Park - Native Himalayan birds"
+      ],
+      evening: [
+        "Sunset at Scandal Point - Historic gathering spot on The Ridge",
+        "Dinner at Cafe Simla Times - Colonial ambiance and local cuisine",
+        "Ice skating at Shimla Ice Skating Rink - Asia's largest open-air rink",
+        "Night walk on Mall Road - Lit up colonial buildings"
+      ]
+    },
+    "Manali": {
+      morning: [
+        "Visit Hadimba Temple - Ancient wooden temple in cedar forest",
+        "Trek to Jogini Waterfall - Scenic hike through pine forests",
+        "Explore Old Manali - Hippie culture, cafes, and riverside walks",
+        "Morning yoga at Vashisht Hot Springs - Natural thermal baths"
+      ],
+      afternoon: [
+        "Adventure at Solang Valley - Paragliding, zorbing, and skiing",
+        "Visit Rohtang Pass - Snow-capped mountain pass at 13,050 ft",
+        "Explore Manu Temple - Dedicated to sage Manu, creator of mankind",
+        "River rafting on Beas River - Grade II-III rapids"
+      ],
+      evening: [
+        "Sunset at Mall Road - Mountain views and shopping",
+        "Dinner at Johnson's Cafe - Trout fish and continental cuisine",
+        "Bonfire at riverside camp - Stars and mountain air",
+        "Evening at Lazy Dog Lounge - Live music and local crowd"
+      ]
+    },
+    "Rishikesh": {
+      morning: [
+        "Sunrise yoga at Parmarth Niketan - Ashram on the Ganges",
+        "White water rafting on Ganges - Thrilling rapids from Shivpuri",
+        "Visit Beatles Ashram (Chaurasi Kutia) - Where the band stayed in 1968",
+        "Walk across Laxman Jhula - Iconic suspension bridge"
+      ],
+      afternoon: [
+        "Bungee jumping at Jumpin Heights - India's highest bungee",
+        "Explore Triveni Ghat - Sacred confluence of three rivers",
+        "Visit Neelkanth Mahadev Temple - Trek through forest trails",
+        "Cliff jumping and body surfing at Shivpuri"
+      ],
+      evening: [
+        "Ganga Aarti at Parmarth Niketan - Spiritual fire ceremony",
+        "Dinner at Little Buddha Cafe - Israeli food with river views",
+        "Meditation session at Osho Ganga Dham Ashram",
+        "Evening walk on Ram Jhula and explore cafes"
+      ]
+    },
+    "Darjeeling": {
+      morning: [
+        "Sunrise at Tiger Hill - View of Kanchenjunga and Mount Everest",
+        "Ride the Darjeeling Himalayan Railway - UNESCO Toy Train",
+        "Visit Batasia Loop - War memorial with 360-degree mountain views",
+        "Tour Happy Valley Tea Estate - Learn tea processing"
+      ],
+      afternoon: [
+        "Explore Padmaja Naidu Himalayan Zoological Park - Red pandas and snow leopards",
+        "Visit Himalayan Mountaineering Institute - Tenzing Norgay's legacy",
+        "Tour Peace Pagoda - Japanese Buddhist temple with panoramic views",
+        "Shop at Chowrasta Mall - Local crafts and tea"
+      ],
+      evening: [
+        "Sunset at Observatory Hill - Sacred site with temple",
+        "Dinner at Glenary's - Historic bakery and restaurant since 1935",
+        "Evening at Keventers - Famous milkshakes since colonial era",
+        "Cultural show featuring Nepali folk dance"
+      ]
+    },
+    "Amritsar": {
+      morning: [
+        "Sunrise at Golden Temple (Harmandir Sahib) - Most sacred Sikh shrine",
+        "Participate in Langar - World's largest free community kitchen",
+        "Visit Jallianwala Bagh - Historic memorial of 1919 massacre",
+        "Tour Central Sikh Museum inside Golden Temple complex"
+      ],
+      afternoon: [
+        "Explore Wagah Border - Daily flag lowering ceremony preparations",
+        "Visit Partition Museum - Moving history of India-Pakistan partition",
+        "Shop at Hall Bazaar - Traditional Phulkari embroidery and juttis",
+        "Tour Maharaja Ranjit Singh Museum - Sikh empire artifacts"
+      ],
+      evening: [
+        "Wagah Border Ceremony - Spectacular flag lowering parade",
+        "Dinner at Kesar da Dhaba - Famous dal makhani since 1916",
+        "Night visit to illuminated Golden Temple - Magical reflection in Amrit Sarovar",
+        "Street food at Lawrence Road - Amritsari kulcha and lassi"
+      ]
+    },
+    "Mysore": {
+      morning: [
+        "Visit Mysore Palace - Magnificent Indo-Saracenic royal residence",
+        "Explore Chamundi Hills - Chamundeshwari Temple and Nandi statue",
+        "Tour Brindavan Gardens - Musical fountain and terraced gardens",
+        "Visit St. Philomena's Church - Gothic architecture cathedral"
+      ],
+      afternoon: [
+        "Explore Devaraja Market - Colorful local market with flowers and spices",
+        "Tour Mysore Zoo - One of India's oldest and best zoos",
+        "Visit Jaganmohan Palace Art Gallery - Raja Ravi Varma paintings",
+        "Shop for Mysore silk sarees and sandalwood products"
+      ],
+      evening: [
+        "Mysore Palace illumination - 97,000 bulbs light up the palace",
+        "Dinner at Vinayaka Mylari - Famous crispy dosas",
+        "Cultural show at Mysore Sand Sculpture Museum",
+        "Evening walk on Sayyaji Rao Road"
+      ]
+    },
+    "Hyderabad": {
+      morning: [
+        "Visit Charminar - Iconic 16th-century monument and mosque",
+        "Explore Golconda Fort - Ancient fortress with acoustic wonders",
+        "Tour Qutb Shahi Tombs - Magnificent mausoleums of Qutb Shahi kings",
+        "Shop at Laad Bazaar - Famous for bangles near Charminar"
+      ],
+      afternoon: [
+        "Visit Ramoji Film City - World's largest integrated film studio",
+        "Explore Salar Jung Museum - One of India's largest art museums",
+        "Tour Chowmahalla Palace - Nizam's royal residence",
+        "Visit Birla Mandir - Marble temple on a hilltop"
+      ],
+      evening: [
+        "Biryani dinner at Paradise Restaurant - Legendary Hyderabadi biryani",
+        "Sunset at Hussain Sagar Lake - Buddha statue and boat ride",
+        "Night walk around Charminar - Illuminated monument",
+        "Explore Eat Street - Food stalls along Necklace Road"
+      ]
+    },
+    "Kolkata": {
+      morning: [
+        "Visit Victoria Memorial - White marble monument and museum",
+        "Explore Howrah Bridge - Iconic cantilever bridge over Hooghly",
+        "Tour Dakshineswar Kali Temple - Where Ramakrishna Paramahamsa lived",
+        "Walk through College Street - World's largest second-hand book market"
+      ],
+      afternoon: [
+        "Visit Indian Museum - Oldest and largest museum in India",
+        "Explore Kumartuli - Watch artisans craft clay idols",
+        "Tour Marble Palace - 19th-century mansion with art collection",
+        "Shop at New Market - Colonial-era shopping arcade"
+      ],
+      evening: [
+        "Sunset at Prinsep Ghat - Colonial riverside promenade",
+        "Dinner at Peter Cat - Famous chelo kebab",
+        "Evening at Park Street - Kolkata's food and nightlife hub",
+        "Ride a heritage tram through the city"
+      ]
+    },
+    "Chennai": {
+      morning: [
+        "Sunrise at Marina Beach - Second longest urban beach in the world",
+        "Visit Kapaleeshwarar Temple - Ancient Dravidian temple in Mylapore",
+        "Explore Fort St. George - First English fortress in India",
+        "Tour San Thome Basilica - Built over St. Thomas the Apostle's tomb"
+      ],
+      afternoon: [
+        "Visit Mahabalipuram - UNESCO rock-cut monuments and Shore Temple",
+        "Explore Government Museum - Second oldest museum in India",
+        "Tour DakshinaChitra - Living museum of South Indian heritage",
+        "Shop at T. Nagar - Silk sarees and gold jewelry"
+      ],
+      evening: [
+        "Sunset at Elliot's Beach (Besant Nagar) - Calm and scenic",
+        "Dinner at Murugan Idli Shop - Authentic South Indian cuisine",
+        "Bharatanatyam dance performance at Kalakshetra",
+        "Evening walk at Marina Beach promenade"
+      ]
+    },
+    "Bengaluru": {
+      morning: [
+        "Visit Lalbagh Botanical Garden - Historic garden with Glass House",
+        "Explore Bangalore Palace - Tudor-style royal residence",
+        "Tour ISKCON Temple - Beautiful Krishna temple on Chord Road",
+        "Walk through Cubbon Park - Green lung of the city"
+      ],
+      afternoon: [
+        "Visit Tipu Sultan's Summer Palace - Indo-Islamic wooden architecture",
+        "Explore Nandi Hills - Hill station with sunrise views",
+        "Tour Innovative Film City - Theme park and film sets",
+        "Shop at Commercial Street - Bustling shopping district"
+      ],
+      evening: [
+        "Dinner at MTR (Mavalli Tiffin Rooms) - Legendary since 1924",
+        "Microbrewery hopping in Indiranagar - Craft beer capital of India",
+        "Evening at UB City - Premium dining and shopping",
+        "Explore Church Street for cafes and nightlife"
+      ]
+    },
+    "Jaisalmer": {
+      morning: [
+        "Sunrise at Sam Sand Dunes - Camel safari in Thar Desert",
+        "Explore Jaisalmer Fort - Living fort with havelis inside",
+        "Visit Patwon Ki Haveli - Largest and most elaborate haveli",
+        "Tour Gadisar Lake - Artificial lake with temples and ghats"
+      ],
+      afternoon: [
+        "Visit Bada Bagh - Royal cenotaphs with desert backdrop",
+        "Explore Kuldhara - Abandoned ghost village with mysterious history",
+        "Tour Nathmal Ki Haveli - Intricate stone carvings by two brothers",
+        "Shop for embroidered textiles and camel leather"
+      ],
+      evening: [
+        "Desert camp dinner with folk music and dance",
+        "Sunset at Sam Sand Dunes - Golden hour in the desert",
+        "Night under stars at luxury desert camp",
+        "Evening walk on fort walls with city views"
+      ]
+    },
+    "Jodhpur": {
+      morning: [
+        "Visit Mehrangarh Fort - One of India's largest forts",
+        "Explore Jaswant Thada - White marble royal cenotaph",
+        "Walk through Blue City - Iconic blue-painted houses below fort",
+        "Tour Umaid Bhawan Palace - Art Deco royal residence"
+      ],
+      afternoon: [
+        "Visit Mandore Gardens - Ancient capital with temples and cenotaphs",
+        "Explore Clock Tower Market (Sardar Market) - Spices and handicrafts",
+        "Tour Rao Jodha Desert Rock Park - Ecological restoration project",
+        "Shop for Jodhpuri mojris and textiles"
+      ],
+      evening: [
+        "Sunset at Mehrangarh Fort - Panoramic views of Blue City",
+        "Dinner at On The Rocks - Rooftop with fort views",
+        "Sound and light show at Mehrangarh Fort",
+        "Evening walk through the old city streets"
+      ]
+    },
+    "Pushkar": {
+      morning: [
+        "Sunrise puja at Pushkar Lake - Sacred bathing ghats",
+        "Visit Brahma Temple - One of very few temples dedicated to Lord Brahma",
+        "Explore Pushkar Bazaar - Hippie clothes, jewelry, and souvenirs",
+        "Camel ride in the desert outskirts"
+      ],
+      afternoon: [
+        "Visit Savitri Temple - Hilltop temple with lake views",
+        "Explore Old Rangji Temple - Dravidian-style architecture",
+        "Tour Pushkar Passport Office - Get your 'Brahma visa'",
+        "Attend a cooking class - Learn Rajasthani cuisine"
+      ],
+      evening: [
+        "Sunset Aarti at Pushkar Ghats - Spiritual ceremony",
+        "Dinner at Honey & Spice Cafe - Rooftop organic food",
+        "Evening at German Bakery - Famous among backpackers",
+        "Stargazing in the desert with bonfire"
+      ]
+    },
+    "Khajuraho": {
+      morning: [
+        "Visit Western Group of Temples - UNESCO World Heritage with Kandariya Mahadeva",
+        "Explore Eastern Group of Temples - Jain and Hindu temples",
+        "Tour Lakshmana Temple - Finest example of Chandela architecture",
+        "Walk through the Archaeological Museum"
+      ],
+      afternoon: [
+        "Visit Southern Group of Temples - Duladeo and Chaturbhuj temples",
+        "Explore Raneh Falls - Grand Canyon of India nearby",
+        "Tour Panna National Park - Tiger reserve 25 km away",
+        "Shop for stone sculptures and local crafts"
+      ],
+      evening: [
+        "Sound and Light Show at Western Group - History comes alive",
+        "Dinner at Raja Cafe - Temple views and Israeli cuisine",
+        "Cultural dance performance - Khajuraho Dance Festival style",
+        "Evening walk around illuminated temples"
+      ]
+    },
+    "Hampi": {
+      morning: [
+        "Sunrise at Virupaksha Temple - Ancient temple still in worship",
+        "Explore Vittala Temple - Famous stone chariot and musical pillars",
+        "Visit Elephant Stables - Royal Vijayanagara architecture",
+        "Trek to Matanga Hill - Panoramic sunrise point"
+      ],
+      afternoon: [
+        "Explore Hampi Bazaar - Ancient marketplace ruins",
+        "Visit Lotus Mahal - Indo-Islamic royal ladies' pavilion",
+        "Tour Queen's Bath - Royal bathing complex with arched corridors",
+        "Coracle ride on Tungabhadra River"
+      ],
+      evening: [
+        "Sunset at Hemakuta Hill - Temple silhouettes against orange sky",
+        "Dinner at Mango Tree Restaurant - Riverside seating",
+        "Explore Hippie Island (Virupapur Gaddi) - Bohemian cafes",
+        "Stargazing among ancient boulder landscapes"
+      ]
+    },
+    "Pondicherry": {
+      morning: [
+        "Sunrise at Rock Beach Promenade - Peaceful morning walk",
+        "Visit Auroville and Matrimandir - Experimental township and meditation dome",
+        "Explore French Quarter (White Town) - Colonial architecture and cafes",
+        "Tour Sri Aurobindo Ashram - Spiritual center"
+      ],
+      afternoon: [
+        "Visit Paradise Beach (Plage Paradiso) - Boat ride to secluded beach",
+        "Explore Arikamedu - Ancient Roman trading port ruins",
+        "Shopping on Mission Street - Boutiques and French bakeries",
+        "Tour Basilica of the Sacred Heart of Jesus"
+      ],
+      evening: [
+        "Sunset at Promenade Beach - Gandhi statue and sea breeze",
+        "Dinner at Villa Shanti - French-Tamil fusion cuisine",
+        "Evening at Cafe des Arts - French Quarter vibes",
+        "Night walk through illuminated French Quarter"
+      ]
+    },
+    "Ooty": {
+      morning: [
+        "Ride the Nilgiri Mountain Railway - UNESCO heritage toy train",
+        "Visit Botanical Gardens - 55 acres of exotic plants and trees",
+        "Explore Doddabetta Peak - Highest point in Nilgiris at 2,637m",
+        "Tour Tea Factory and Museum - Learn about Nilgiri tea"
+      ],
+      afternoon: [
+        "Boating at Ooty Lake - Peaceful lake surrounded by eucalyptus",
+        "Visit Rose Garden - Over 20,000 rose varieties",
+        "Explore Pykara Falls and Lake - Scenic waterfalls and reservoir",
+        "Tour Thread Garden - Unique garden made entirely of thread"
+      ],
+      evening: [
+        "Sunset at Elk Hill - Panoramic views of Ooty",
+        "Dinner at Earl's Secret - Colonial bungalow restaurant",
+        "Hot chocolate at King Star Confectionery - Famous since decades",
+        "Evening walk at Charing Cross"
+      ]
+    },
+    "Coorg": {
+      morning: [
+        "Visit Abbey Falls - Scenic waterfall surrounded by coffee and spice plantations",
+        "Explore Raja's Seat - Sunrise viewpoint of the valley",
+        "Tour Coffee Plantation - Learn about Coorg's famous coffee",
+        "Trek to Tadiandamol Peak - Highest peak in Coorg"
+      ],
+      afternoon: [
+        "Visit Namdroling Monastery - Golden Temple, largest Tibetan settlement",
+        "Explore Dubare Elephant Camp - Bathe and feed elephants",
+        "Tour Talakaveri - Source of river Kaveri",
+        "Visit Madikeri Fort - Historic fort with panoramic views"
+      ],
+      evening: [
+        "Sunset at Raja's Seat - Spectacular mountain views",
+        "Dinner with pork curry - Traditional Kodava cuisine",
+        "Homestay experience with local family",
+        "Bonfire and stargazing in plantation"
+      ]
+    },
+    "Andaman Islands": {
+      morning: [
+        "Sunrise at Radhanagar Beach - Asia's best beach on Havelock",
+        "Snorkeling at Elephant Beach - Crystal clear waters and coral",
+        "Visit Cellular Jail - Colonial-era prison and museum",
+        "Scuba diving at Nemo Reef - Encounter marine life"
+      ],
+      afternoon: [
+        "Visit Ross Island - Abandoned British colonial capital ruins",
+        "Explore North Bay Island - Glass-bottom boat and sea walking",
+        "Kayaking through Mangrove Creeks - Pristine forest waterways",
+        "Visit Kalapathar Beach - Black rocks and turquoise waters"
+      ],
+      evening: [
+        "Sound and Light Show at Cellular Jail - Freedom struggle history",
+        "Sunset at Laxmanpur Beach - Stunning sea views",
+        "Seafood dinner at New Lighthouse Restaurant",
+        "Bioluminescence spotting at night (seasonal)"
+      ]
+    },
+    "Kaziranga": {
+      morning: [
+        "Elephant Safari in Central Range - Spot one-horned rhinos up close",
+        "Jeep Safari in Western Range - Best for tiger sightings",
+        "Birdwatching at Mihimukh - Wetland bird sanctuary",
+        "Visit Panbari Reserve Forest - Hollock gibbons habitat"
+      ],
+      afternoon: [
+        "Jeep Safari in Eastern Range - Wild elephants and buffalo",
+        "Visit Orchid Park - Exotic Assamese orchids",
+        "Tour Kaziranga National Orchid and Biodiversity Park",
+        "Explore local Mishing tribal village"
+      ],
+      evening: [
+        "Sunset at Kohora - Golden light over grasslands",
+        "Traditional Assamese dinner with local thali",
+        "Cultural show featuring Bihu dance",
+        "Night safari with spotlight (if available)"
+      ]
+    },
+    "Rann of Kutch": {
+      morning: [
+        "Sunrise at White Rann - Salt desert turns golden",
+        "Visit Kalo Dungar (Black Hill) - Highest point with panoramic views",
+        "Explore Hodka Village - Traditional Kutchi handicrafts",
+        "Camel safari across the white desert"
+      ],
+      afternoon: [
+        "Visit Dhordo - Gateway to Rann Utsav tent city",
+        "Explore Bhuj - Aina Mahal and Prag Mahal palaces",
+        "Tour Kutch Museum - Oldest museum in Gujarat",
+        "Shop for Kutchi embroidery, bandhani, and leather crafts"
+      ],
+      evening: [
+        "Sunset at White Rann - Surreal salt desert views",
+        "Rann Utsav cultural program - Folk music and dance",
+        "Dinner under stars at desert camp",
+        "Full moon walk on the salt flats (during Sharad Purnima)"
+      ]
+    },
+    "Ajanta Ellora": {
+      morning: [
+        "Visit Ajanta Caves - 30 Buddhist rock-cut caves with ancient paintings",
+        "Explore Cave 1 & 2 - Finest Bodhisattva murals",
+        "Tour Cave 26 - Largest chaitya hall with reclining Buddha",
+        "Early morning for best lighting in painted caves"
+      ],
+      afternoon: [
+        "Visit Ellora Caves - Hindu, Buddhist, and Jain rock-cut temples",
+        "Explore Kailasa Temple (Cave 16) - World's largest monolithic excavation",
+        "Tour Jain Caves (Cave 30-34) - Intricate carvings",
+        "Visit Grishneshwar Temple - One of 12 Jyotirlingas"
+      ],
+      evening: [
+        "Sunset at Aurangabad - Bibi Ka Maqbara (Mini Taj)",
+        "Dinner with Aurangabad's famous Naan Qalia",
+        "Visit Panchakki - 17th-century watermill",
+        "Night walk in old Aurangabad city"
+      ]
+    },
+    "Mount Abu": {
+      morning: [
+        "Sunrise at Guru Shikhar - Highest peak in Rajasthan at 1,722m",
+        "Visit Dilwara Temples - Exquisite Jain marble temples",
+        "Explore Nakki Lake - Boating and scenic views",
+        "Tour Achalgarh Fort - 14th-century fort with temples"
+      ],
+      afternoon: [
+        "Visit Toad Rock - Natural rock formation viewpoint",
+        "Explore Wildlife Sanctuary - Leopards and sloth bears",
+        "Tour Peace Park and Om Shanti Bhawan - Brahma Kumaris HQ",
+        "Shop at Nakki Lake Market - Rajasthani crafts"
+      ],
+      evening: [
+        "Sunset Point - Spectacular views of Aravalli hills",
+        "Dinner at Arbuda Restaurant - Rajasthani and Gujarati thalis",
+        "Evening at Honeymoon Point - Romantic hilltop spot",
+        "Night walk around Nakki Lake"
+      ]
+    },
+    "Lakshadweep": {
+      morning: [
+        "Sunrise at Agatti Beach - Pristine white sand and turquoise water",
+        "Snorkeling at Bangaram Island - Coral reefs and tropical fish",
+        "Visit Kavaratti Island - Capital with marine aquarium",
+        "Kayaking in crystal clear lagoons"
+      ],
+      afternoon: [
+        "Scuba diving at reef sites - Encounter manta rays and turtles",
+        "Glass-bottom boat ride - View coral without getting wet",
+        "Visit Minicoy Island - Southernmost island with lighthouse",
+        "Deep sea fishing excursion"
+      ],
+      evening: [
+        "Sunset cruise around the atoll",
+        "Fresh seafood dinner at beach resort",
+        "Stargazing on uninhabited island beach",
+        "Traditional Lakshadweep folk dance performance"
+      ]
+    },
+    "Arunachal Pradesh": {
+      morning: [
+        "Visit Tawang Monastery - India's largest Buddhist monastery",
+        "Sunrise at Sela Pass - Frozen lake at 13,700 ft",
+        "Explore Nuranang Falls - Stunning waterfall near Tawang",
+        "Visit Gorichen Peak viewpoint - Snow-capped mountain views"
+      ],
+      afternoon: [
+        "Explore Ziro Valley - UNESCO World Heritage site, Apatani tribe",
+        "Visit Namdapha National Park - India's largest protected area",
+        "Tour Itanagar's Ganga Lake - Tranquil lake surrounded by hills",
+        "Visit Ita Fort - 14th-century brick fortification"
+      ],
+      evening: [
+        "Sunset at Tawang War Memorial - Honoring 1962 war heroes",
+        "Dinner with local Monpa cuisine",
+        "Cultural show featuring tribal dances",
+        "Bonfire at camp with mountain views"
+      ]
+    },
+    "Sikkim": {
+      morning: [
+        "Sunrise at Tsomgo Lake - Sacred glacial lake at 12,400 ft",
+        "Visit Rumtek Monastery - Seat of Kagyu lineage of Buddhism",
+        "Drive to Nathula Pass - India-China border at 14,140 ft",
+        "Explore Gangtok MG Marg - Car-free promenade"
+      ],
+      afternoon: [
+        "Visit Pelling - Views of Kanchenjunga, India's highest peak",
+        "Explore Rabdentse Ruins - Ancient capital of Sikkim",
+        "Tour Namchi - Largest Shiva statue at Char Dham",
+        "Cable car ride from Gangtok to Tashi viewpoint"
+      ],
+      evening: [
+        "Sunset at Tashi View Point - Kanchenjunga golden hour",
+        "Dinner with traditional Sikkimese thali",
+        "Evening at Lal Market - Local produce and crafts",
+        "Hot stone bath at local spa"
+      ]
     }
   };
 
