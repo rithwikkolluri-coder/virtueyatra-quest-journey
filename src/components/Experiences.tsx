@@ -106,10 +106,10 @@ const Experiences = () => {
     ? experiences
     : experiences.filter(e => e.category === activeTab);
 
-  const handleBookExperience = (titleKey: string, price: string) => {
+  const handleBookExperience = (titleKey: string) => {
     toast({
       title: `${t('experiences.selected')} 🎉`,
-      description: `${t(titleKey)} (${price}) ${t('experiences.addedMessage')}`,
+      description: `${t(titleKey)} ${t('experiences.addedMessage')}`,
     });
     const planSection = document.getElementById('plan');
     planSection?.scrollIntoView({ behavior: 'smooth' });
@@ -189,14 +189,9 @@ const Experiences = () => {
                     </Badge>
                   </div>
 
-                  {/* Price */}
-                  <div className="text-xl font-bold text-secondary mb-4">
-                    {experience.price}
-                  </div>
-
                   {/* CTA */}
                   <Button
-                    onClick={() => handleBookExperience(experience.titleKey, experience.price)}
+                    onClick={() => handleBookExperience(experience.titleKey)}
                     className="w-full bg-gradient-to-r from-primary to-travel-ocean hover:scale-105 transition-all"
                   >
                     {t('experiences.bookNow')}
