@@ -32,6 +32,22 @@ const VirtualWorld = () => {
       nameTe: "జైపూర్ సిటీ ప్యాలెస్",
       thumbnail: "https://images.unsplash.com/photo-1477587458883-47145ed94245?w=400",
       videoUrl: "https://www.youtube.com/embed/gYO1uk7vIcc?autoplay=1"
+    },
+    {
+      id: 4,
+      name: "Kerala Backwaters",
+      nameHi: "केरल बैकवाटर्स",
+      nameTe: "కేరళ బ్యాక్‌వాటర్స్",
+      thumbnail: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=400",
+      videoUrl: "https://www.youtube.com/embed/LXb3EKWsInQ?autoplay=1"
+    },
+    {
+      id: 5,
+      name: "Ladakh Mountains",
+      nameHi: "लद्दाख पर्वत",
+      nameTe: "లడఖ్ పర్వతాలు",
+      thumbnail: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=400",
+      videoUrl: "https://www.youtube.com/embed/mQhXjD6J9Ik?autoplay=1"
     }
   ];
 
