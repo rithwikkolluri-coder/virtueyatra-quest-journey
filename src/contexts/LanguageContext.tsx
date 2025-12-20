@@ -257,6 +257,13 @@ const translations: Record<Language, Record<string, string>> = {
     'toast.tripReadySignIn': 'Your itinerary for {destination} is ready! Sign in to save your trips.',
     'toast.tripDeleted': 'Trip deleted',
     'toast.tripDeletedDesc': 'Your trip has been removed from history.',
+    
+    // Virtual World
+    'virtualWorld.button': 'View Virtual World',
+    'virtualWorld.title': '360° Virtual Tours',
+    'virtualWorld.clickToExplore': 'Click to start the 360° experience',
+    'virtualWorld.selectDestination': 'Select Destination',
+    'virtualWorld.tip': '💡 Tip: Drag to look around in 360°. Use mouse wheel to zoom.',
   },
   hi: {
     // Header
@@ -506,6 +513,13 @@ const translations: Record<Language, Record<string, string>> = {
     'toast.tripReadySignIn': '{destination} के लिए आपका यात्रा कार्यक्रम तैयार है! अपनी यात्राएं सहेजने के लिए साइन इन करें।',
     'toast.tripDeleted': 'यात्रा हटाई गई',
     'toast.tripDeletedDesc': 'आपकी यात्रा इतिहास से हटा दी गई है।',
+    
+    // Virtual World
+    'virtualWorld.button': 'वर्चुअल वर्ल्ड देखें',
+    'virtualWorld.title': '360° वर्चुअल टूर',
+    'virtualWorld.clickToExplore': '360° अनुभव शुरू करने के लिए क्लिक करें',
+    'virtualWorld.selectDestination': 'गंतव्य चुनें',
+    'virtualWorld.tip': '💡 सुझाव: 360° में देखने के लिए खींचें। ज़ूम करने के लिए माउस व्हील का उपयोग करें।',
   },
   te: {
     // Header
@@ -755,6 +769,13 @@ const translations: Record<Language, Record<string, string>> = {
     'toast.tripReadySignIn': '{destination} కోసం మీ యాత్రా పథకం సిద్ధంగా ఉంది! మీ ట్రిప్‌లను సేవ్ చేయడానికి సైన్ ఇన్ చేయండి.',
     'toast.tripDeleted': 'ట్రిప్ తొలగించబడింది',
     'toast.tripDeletedDesc': 'మీ ట్రిప్ చరిత్ర నుండి తొలగించబడింది.',
+    
+    // Virtual World
+    'virtualWorld.button': 'వర్చువల్ వరల్డ్ చూడండి',
+    'virtualWorld.title': '360° వర్చువల్ టూర్లు',
+    'virtualWorld.clickToExplore': '360° అనుభవాన్ని ప్రారంభించడానికి క్లిక్ చేయండి',
+    'virtualWorld.selectDestination': 'గమ్యస్థానం ఎంచుకోండి',
+    'virtualWorld.tip': '💡 చిట్కా: 360°లో చూడటానికి డ్రాగ్ చేయండి. జూమ్ చేయడానికి మౌస్ వీల్ ఉపయోగించండి.',
   },
 };
 
