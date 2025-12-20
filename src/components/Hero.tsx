@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Calendar } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
+import VirtualWorld from "./VirtualWorld";
 
 const Hero = () => {
   const { t } = useLanguage();
@@ -68,8 +69,13 @@ const Hero = () => {
             </Button>
           </div>
 
+          {/* Virtual World Button */}
+          <div className="flex justify-center mt-6 animate-slide-up" style={{ animationDelay: "0.8s" }}>
+            <VirtualWorld />
+          </div>
+
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-8 max-w-xl mx-auto mt-16 animate-slide-up" style={{ animationDelay: "0.8s" }}>
+          <div className="grid grid-cols-2 gap-8 max-w-xl mx-auto mt-10 animate-slide-up" style={{ animationDelay: "1s" }}>
             <div className="glass-effect rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
               <MapPin className="w-8 h-8 text-secondary mx-auto mb-2" />
               <div className="text-3xl font-bold text-white">1000+</div>
