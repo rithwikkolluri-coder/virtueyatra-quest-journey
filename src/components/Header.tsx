@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Compass, LogOut, User } from "lucide-react";
+import { Menu, X, Compass, LogOut, User, Bus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -71,6 +71,11 @@ const Header = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
+            <a href="https://www.redbus.in" target="_blank" rel="noopener noreferrer" title="Book Bus Tickets">
+              <Button variant="outline" size="icon" className="border-primary/30 hover:bg-primary/10">
+                <Bus className="w-5 h-5 text-primary" />
+              </Button>
+            </a>
             <LanguageSwitcher />
             {user ? (
               <DropdownMenu>
@@ -130,6 +135,12 @@ const Header = () => {
                   </a>
                 </li>
               ))}
+              <li className="pt-4 border-t border-border">
+                <a href="https://www.redbus.in" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-foreground font-medium hover:text-primary transition-colors py-2">
+                  <Bus className="w-5 h-5" />
+                  Book Bus Tickets
+                </a>
+              </li>
               <li className="pt-4 border-t border-border">
                 <LanguageSwitcher />
               </li>
