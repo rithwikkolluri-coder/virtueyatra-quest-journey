@@ -2,33 +2,28 @@ import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Send, X, MessageCircle } from "lucide-react";
+import { Bot, Send, X, MessageCircle, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ReactMarkdown from "react-markdown";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
-  text: string;
-  isBot: boolean;
-  timestamp: Date;
+  role: "user" | "assistant";
+  content: string;
 }
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/travel-chat`;
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { t } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<Message[]>([
+    { role: "assistant", content: "Hey there, travel buddy! 🌍✈️ I'm **Yatra Buddy** — your personal travel friend. Ask me anything about destinations, bookings, budgets, or hidden gems across India. Let's plan something awesome! 🎉" }
+  ]);
   const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    if (!initialized) {
-      setMessages([{
-        text: t('chatbot.greeting'),
-        isBot: true,
-        timestamp: new Date(),
-      }]);
-      setInitialized(true);
-    }
-  }, [t, initialized]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,62 +33,107 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
 
-  const getBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("नमस्ते") || lowerMessage.includes("నమస్కారం")) {
-      return t('chatbot.response.hello');
-    }
-    if (lowerMessage.includes("beach") || lowerMessage.includes("coastal") || lowerMessage.includes("समुद्र") || lowerMessage.includes("బీచ్")) {
-      return t('chatbot.response.beach');
-    }
-    if (lowerMessage.includes("mountain") || lowerMessage.includes("himalaya") || lowerMessage.includes("पहाड़") || lowerMessage.includes("పర్వతం")) {
-      return t('chatbot.response.mountain');
-    }
-    if (lowerMessage.includes("budget") || lowerMessage.includes("price") || lowerMessage.includes("बजट") || lowerMessage.includes("బడ్జెట్")) {
-      return t('chatbot.response.budget');
-    }
-    if (lowerMessage.includes("wildlife") || lowerMessage.includes("safari") || lowerMessage.includes("वन्यजीव") || lowerMessage.includes("వన్యప్రాణి")) {
-      return t('chatbot.response.wildlife');
-    }
-    if (lowerMessage.includes("book") || lowerMessage.includes("reserve") || lowerMessage.includes("बुक") || lowerMessage.includes("బుక్")) {
-      return t('chatbot.response.book');
-    }
-    if (lowerMessage.includes("culture") || lowerMessage.includes("heritage") || lowerMessage.includes("संस्कृति") || lowerMessage.includes("సంస్కృతి")) {
-      return t('chatbot.response.culture');
-    }
-    if (lowerMessage.includes("thank") || lowerMessage.includes("धन्यवाद") || lowerMessage.includes("ధన్యవాదాలు")) {
-      return t('chatbot.response.thank');
-    }
-    
-    return t('chatbot.response.default');
-  };
+  const handleSend = async () => {
+    if (!inputValue.trim() || isLoading) return;
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
-
-    const userMessage: Message = {
-      text: inputValue,
-      isBot: false,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const userMsg: Message = { role: "user", content: inputValue };
+    setMessages(prev => [...prev, userMsg]);
     setInputValue("");
+    setIsLoading(true);
 
-    // Simulate bot thinking and response
-    setTimeout(() => {
-      const botMessage: Message = {
-        text: getBotResponse(inputValue),
-        isBot: true,
-        timestamp: new Date(),
+    let assistantSoFar = "";
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: [...messages, userMsg] }),
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to get response");
+      }
+
+      if (!resp.body) throw new Error("No response body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let streamDone = false;
+
+      const upsertAssistant = (nextChunk: string) => {
+        assistantSoFar += nextChunk;
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
+            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+          }
+          return [...prev, { role: "assistant", content: assistantSoFar }];
+        });
       };
-      setMessages(prev => [...prev, botMessage]);
-    }, 800);
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) upsertAssistant(content);
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Final flush
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split("\n")) {
+          if (!raw) continue;
+          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+          if (raw.startsWith(":") || raw.trim() === "") continue;
+          if (!raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) upsertAssistant(content);
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (e) {
+      console.error("Chat error:", e);
+      toast({
+        title: "Oops!",
+        description: e instanceof Error ? e.message : "Something went wrong. Try again!",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -101,7 +141,6 @@ const Chatbot = () => {
 
   return (
     <>
-      {/* Floating Chat Button */}
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
@@ -113,71 +152,68 @@ const Chatbot = () => {
         </Button>
       )}
 
-      {/* Chat Window */}
       {isOpen && (
         <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col border-border/50 bg-card overflow-hidden">
-          {/* Header */}
           <div className="bg-gradient-to-r from-primary to-travel-ocean p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                 <Bot className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-white">{t('chatbot.title')}</h3>
-                <p className="text-xs text-white/80">{t('chatbot.subtitle')}</p>
+                <h3 className="font-semibold text-white">Yatra Buddy 🧳</h3>
+                <p className="text-xs text-white/80">Your AI travel friend</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-              className="text-white hover:bg-white/20"
-            >
+            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-white hover:bg-white/20">
               <X className="w-5 h-5" />
             </Button>
           </div>
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
             {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.isBot ? 'justify-start' : 'justify-end'} animate-slide-up`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    message.isBot
-                      ? 'bg-gradient-to-br from-primary/10 to-travel-teal/10 border border-primary/20'
-                      : 'bg-gradient-to-br from-secondary to-accent text-white'
-                  }`}
-                >
-                  <p className="text-sm leading-relaxed">{message.text}</p>
-                  <p className={`text-xs mt-1 ${message.isBot ? 'text-muted-foreground' : 'text-white/70'}`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+              <div key={index} className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"} animate-slide-up`}>
+                <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                  message.role === "assistant"
+                    ? "bg-gradient-to-br from-primary/10 to-travel-teal/10 border border-primary/20"
+                    : "bg-gradient-to-br from-secondary to-accent text-white"
+                }`}>
+                  {message.role === "assistant" ? (
+                    <div className="text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                  )}
                 </div>
               </div>
             ))}
+            {isLoading && messages[messages.length - 1]?.role === "user" && (
+              <div className="flex justify-start">
+                <div className="bg-gradient-to-br from-primary/10 to-travel-teal/10 border border-primary/20 rounded-2xl px-4 py-3">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <div className="p-4 border-t border-border bg-background">
             <div className="flex gap-2">
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={t('chatbot.placeholder')}
+                placeholder={t("chatbot.placeholder")}
                 className="flex-1 border-border/50 focus:border-primary"
+                disabled={isLoading}
               />
               <Button
                 onClick={handleSend}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || isLoading}
                 className="bg-gradient-to-r from-primary to-travel-ocean hover:scale-105 transition-transform"
                 size="icon"
               >
-                <Send className="w-4 h-4" />
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>
           </div>
