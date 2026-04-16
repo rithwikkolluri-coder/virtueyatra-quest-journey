@@ -14,8 +14,8 @@ interface Message {
 
 // Extend Window for Speech Recognition API
 interface SpeechRecognitionWindow extends Window {
-  SpeechRecognition?: new () => SpeechRecognition;
-  webkitSpeechRecognition?: new () => SpeechRecognition;
+  SpeechRecognition?: any;
+  webkitSpeechRecognition?: any;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/travel-chat`;
@@ -49,7 +49,7 @@ const Chatbot = () => {
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionCtor();
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = "en-IN";
