@@ -264,10 +264,19 @@ const Chatbot = () => {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={t("chatbot.placeholder")}
-                className="flex-1 border-border/50 focus:border-primary"
+                placeholder={isListening ? "🎤 Listening..." : t("chatbot.placeholder")}
+                className={`flex-1 border-border/50 focus:border-primary ${isListening ? "border-red-400 animate-pulse" : ""}`}
                 disabled={isLoading}
               />
+              <Button
+                onClick={toggleListening}
+                disabled={isLoading}
+                variant={isListening ? "destructive" : "outline"}
+                className={`transition-all ${isListening ? "animate-pulse" : "hover:scale-105"}`}
+                size="icon"
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
               <Button
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isLoading}
