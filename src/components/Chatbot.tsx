@@ -12,6 +12,12 @@ interface Message {
   content: string;
 }
 
+// Extend Window for Speech Recognition API
+interface SpeechRecognitionWindow extends Window {
+  SpeechRecognition?: new () => SpeechRecognition;
+  webkitSpeechRecognition?: new () => SpeechRecognition;
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/travel-chat`;
 
 const Chatbot = () => {
@@ -24,7 +30,7 @@ const Chatbot = () => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const stopListening = useCallback(() => {
@@ -36,8 +42,9 @@ const Chatbot = () => {
   }, []);
 
   const startListening = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    const win = window as unknown as SpeechRecognitionWindow;
+    const SpeechRecognitionCtor = win.SpeechRecognition || win.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) {
       toast({ title: "Not supported", description: "Speech recognition is not supported in your browser. Try Chrome.", variant: "destructive" });
       return;
     }
