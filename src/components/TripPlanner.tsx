@@ -392,6 +392,9 @@ const TripPlanner = () => {
                   startDate={tripSummary.startDate}
                   endDate={tripSummary.endDate}
                   interests={tripSummary.interests}
+                  travelers={tripSummary.travelers}
+                  budget={tripSummary.budget}
+                  specialRequests={tripSummary.specialRequests}
                 />
               )}
             </>
