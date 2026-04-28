@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { MapPin, Sun, Cloud, Moon, Lightbulb } from "lucide-react";
+import { MapPin, Sun, Cloud, Moon, Lightbulb, Loader2, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ItineraryProps {
@@ -7,10 +8,48 @@ interface ItineraryProps {
   startDate: string;
   endDate: string;
   interests: string[];
+  travelers?: string;
+  budget?: string;
+  specialRequests?: string;
 }
 
-const Itinerary = ({ destination, startDate, endDate, interests }: ItineraryProps) => {
+interface AIDay { day: number; morning: string; afternoon: string; evening: string; }
+
+const ITINERARY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-itinerary`;
+
+const Itinerary = ({ destination, startDate, endDate, interests, travelers, budget, specialRequests }: ItineraryProps) => {
   const { t } = useLanguage();
+  const [aiDays, setAiDays] = useState<AIDay[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAI = async () => {
+      setAiLoading(true);
+      setAiError(null);
+      setAiDays(null);
+      try {
+        const resp = await fetch(ITINERARY_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ destination, startDate, endDate, interests, travelers, budget, specialRequests }),
+        });
+        if (!resp.ok) throw new Error("AI itinerary unavailable");
+        const data = await resp.json();
+        if (!cancelled && Array.isArray(data?.days)) setAiDays(data.days);
+      } catch (e) {
+        if (!cancelled) setAiError(e instanceof Error ? e.message : "Failed to load AI itinerary");
+      } finally {
+        if (!cancelled) setAiLoading(false);
+      }
+    };
+    if (destination && startDate && endDate) fetchAI();
+    return () => { cancelled = true; };
+  }, [destination, startDate, endDate, JSON.stringify(interests), travelers, budget, specialRequests]);
   
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -776,18 +815,38 @@ const Itinerary = ({ destination, startDate, endDate, interests }: ItineraryProp
 
   const days = Array.from({ length: Math.min(dayCount, 7) }, (_, i) => i + 1);
 
+  const getActivities = (day: number) => {
+    if (aiDays && aiDays.length > 0) {
+      const found = aiDays.find(d => d.day === day) || aiDays[(day - 1) % aiDays.length];
+      if (found) return { morning: found.morning, afternoon: found.afternoon, evening: found.evening };
+    }
+    return generateDayActivities(day);
+  };
+
   return (
     <Card className="p-6 mt-8 border-border/50 bg-card/80 backdrop-blur-sm animate-slide-up">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-travel-ocean flex items-center justify-center">
-          <MapPin className="w-5 h-5 text-white" />
+      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-travel-ocean flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-white" />
+          </div>
+          <h3 className="text-xl font-bold">{t('itinerary.title')}</h3>
         </div>
-        <h3 className="text-xl font-bold">{t('itinerary.title')}</h3>
+        {aiLoading && (
+          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Personalizing with AI...
+          </span>
+        )}
+        {aiDays && !aiLoading && (
+          <span className="flex items-center gap-1.5 text-xs text-primary">
+            <Sparkles className="w-3.5 h-3.5" /> AI-personalized for your trip
+          </span>
+        )}
       </div>
 
       <div className="space-y-6">
         {days.map((day) => {
-          const activities = generateDayActivities(day);
+          const activities = getActivities(day);
           const currentDate = new Date(start);
           currentDate.setDate(start.getDate() + day - 1);
           
@@ -801,6 +860,7 @@ const Itinerary = ({ destination, startDate, endDate, interests }: ItineraryProp
                   {currentDate.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </span>
               </div>
+
               
               <div className="grid gap-3">
                 <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
