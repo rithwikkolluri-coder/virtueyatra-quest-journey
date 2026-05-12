@@ -5,6 +5,7 @@ import BookingLinks from "@/components/BookingLinks";
 import Destinations from "@/components/Destinations";
 import Experiences from "@/components/Experiences";
 import TripPlanner from "@/components/TripPlanner";
+import TripMap from "@/components/TripMap";
 import Chatbot from "@/components/Chatbot";
 import Footer from "@/components/Footer";
 
@@ -19,6 +20,7 @@ const Index = () => {
         <Destinations />
         <Experiences />
         <TripPlanner />
+        <TripMap />
       </main>
       <Footer />
       <Chatbot />
