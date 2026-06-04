@@ -227,11 +227,16 @@ const Destinations = () => {
         </div>
 
         {/* Search Input */}
-        <div className="max-w-md mx-auto mb-8 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div
+          className={`max-w-md mx-auto mb-8 relative rounded-full transition-all duration-300 ${
+            keyboardFlash ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+          }`}
+        >
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <Input
+            ref={inputRef}
             type="text"
-            placeholder="Search destinations..."
+            placeholder="Type to search destinations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 rounded-full border-border/50 focus-visible:ring-primary"
