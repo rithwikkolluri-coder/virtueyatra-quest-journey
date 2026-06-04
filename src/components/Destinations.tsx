@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const Destinations = () => {
   const [activeTab, setActiveTab] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const { t } = useLanguage();
 
   const tabs = [
