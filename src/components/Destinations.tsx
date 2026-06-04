@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const Destinations = () => {
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [keyboardFlash, setKeyboardFlash] = useState(false);
   const { t } = useLanguage();
+  const sectionRef = useRef<HTMLElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tabs = [
     { key: "All", label: t('destinations.all') },
@@ -139,8 +143,60 @@ const Destinations = () => {
     return result;
   }, [activeTab, searchQuery, t, destinations]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing in an input, textarea, or contenteditable
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Only act if the destinations section is in view
+      if (!sectionRef.current) return;
+      const rect = sectionRef.current.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (!inView) return;
+
+      if (e.key === "Escape") {
+        setSearchQuery("");
+        inputRef.current?.blur();
+        return;
+      }
+
+      if (e.key === "Backspace") {
+        setSearchQuery((prev) => prev.slice(0, -1));
+        inputRef.current?.focus();
+        triggerFlash();
+        return;
+      }
+
+      // Single printable character (letter, number, space)
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        setSearchQuery((prev) => prev + e.key);
+        inputRef.current?.focus();
+        triggerFlash();
+      }
+    };
+
+    const triggerFlash = () => {
+      setKeyboardFlash(true);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setKeyboardFlash(false), 300);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    };
+  }, []);
+
   return (
-    <section id="destinations" className="py-24 bg-muted/30">
+    <section id="destinations" ref={sectionRef} className="py-24 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-12 animate-slide-up">
@@ -171,11 +227,16 @@ const Destinations = () => {
         </div>
 
         {/* Search Input */}
-        <div className="max-w-md mx-auto mb-8 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div
+          className={`max-w-md mx-auto mb-8 relative rounded-full transition-all duration-300 ${
+            keyboardFlash ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+          }`}
+        >
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
           <Input
+            ref={inputRef}
             type="text"
-            placeholder="Search destinations..."
+            placeholder="Type to search destinations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 rounded-full border-border/50 focus-visible:ring-primary"
