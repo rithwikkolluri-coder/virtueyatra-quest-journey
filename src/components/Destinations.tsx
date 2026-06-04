@@ -9,7 +9,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const Destinations = () => {
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [keyboardFlash, setKeyboardFlash] = useState(false);
   const { t } = useLanguage();
+  const sectionRef = useRef<HTMLElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tabs = [
     { key: "All", label: t('destinations.all') },
