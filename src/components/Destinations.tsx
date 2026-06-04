@@ -122,9 +122,22 @@ const Destinations = () => {
     },
   ];
 
-  const filteredDestinations = activeTab === "All" 
-    ? destinations 
-    : destinations.filter(d => d.category === activeTab);
+  const filteredDestinations = useMemo(() => {
+    let result = activeTab === "All" 
+      ? destinations 
+      : destinations.filter(d => d.category === activeTab);
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      result = result.filter(d => {
+        const name = t(d.nameKey).toLowerCase();
+        const location = t(d.locationKey).toLowerCase();
+        return name.includes(query) || location.includes(query);
+      });
+    }
+    
+    return result;
+  }, [activeTab, searchQuery, t, destinations]);
 
   return (
     <section id="destinations" className="py-24 bg-muted/30">
