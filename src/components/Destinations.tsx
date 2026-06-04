@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, TrendingUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MapPin, TrendingUp, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Destinations = () => {
   const [activeTab, setActiveTab] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const { t } = useLanguage();
 
   const tabs = [
@@ -120,9 +122,22 @@ const Destinations = () => {
     },
   ];
 
-  const filteredDestinations = activeTab === "All" 
-    ? destinations 
-    : destinations.filter(d => d.category === activeTab);
+  const filteredDestinations = useMemo(() => {
+    let result = activeTab === "All" 
+      ? destinations 
+      : destinations.filter(d => d.category === activeTab);
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      result = result.filter(d => {
+        const name = t(d.nameKey).toLowerCase();
+        const location = t(d.locationKey).toLowerCase();
+        return name.includes(query) || location.includes(query);
+      });
+    }
+    
+    return result;
+  }, [activeTab, searchQuery, t, destinations]);
 
   return (
     <section id="destinations" className="py-24 bg-muted/30">
@@ -153,6 +168,18 @@ const Destinations = () => {
               {tab.label}
             </Button>
           ))}
+        </div>
+
+        {/* Search Input */}
+        <div className="max-w-md mx-auto mb-8 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search destinations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 rounded-full border-border/50 focus-visible:ring-primary"
+          />
         </div>
 
         {/* Destinations Grid */}
@@ -234,7 +261,11 @@ const Destinations = () => {
         {/* No Results Message */}
         {filteredDestinations.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">{t('destinations.noResults')}</p>
+            <p className="text-muted-foreground text-lg">
+              {searchQuery.trim()
+                ? `No destinations found for "${searchQuery.trim()}".`
+                : t('destinations.noResults')}
+            </p>
           </div>
         )}
       </div>
