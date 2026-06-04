@@ -170,6 +170,18 @@ const Destinations = () => {
           ))}
         </div>
 
+        {/* Search Input */}
+        <div className="max-w-md mx-auto mb-8 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search destinations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 rounded-full border-border/50 focus-visible:ring-primary"
+          />
+        </div>
+
         {/* Destinations Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredDestinations.map((destination, index) => (
