@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, TrendingUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MapPin, TrendingUp, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Destinations = () => {
