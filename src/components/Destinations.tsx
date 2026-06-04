@@ -261,7 +261,11 @@ const Destinations = () => {
         {/* No Results Message */}
         {filteredDestinations.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">{t('destinations.noResults')}</p>
+            <p className="text-muted-foreground text-lg">
+              {searchQuery.trim()
+                ? `No destinations found for "${searchQuery.trim()}".`
+                : t('destinations.noResults')}
+            </p>
           </div>
         )}
       </div>
