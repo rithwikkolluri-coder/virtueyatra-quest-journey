@@ -143,8 +143,60 @@ const Destinations = () => {
     return result;
   }, [activeTab, searchQuery, t, destinations]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing in an input, textarea, or contenteditable
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Only act if the destinations section is in view
+      if (!sectionRef.current) return;
+      const rect = sectionRef.current.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (!inView) return;
+
+      if (e.key === "Escape") {
+        setSearchQuery("");
+        inputRef.current?.blur();
+        return;
+      }
+
+      if (e.key === "Backspace") {
+        setSearchQuery((prev) => prev.slice(0, -1));
+        inputRef.current?.focus();
+        triggerFlash();
+        return;
+      }
+
+      // Single printable character (letter, number, space)
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        setSearchQuery((prev) => prev + e.key);
+        inputRef.current?.focus();
+        triggerFlash();
+      }
+    };
+
+    const triggerFlash = () => {
+      setKeyboardFlash(true);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setKeyboardFlash(false), 300);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    };
+  }, []);
+
   return (
-    <section id="destinations" className="py-24 bg-muted/30">
+    <section id="destinations" ref={sectionRef} className="py-24 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-12 animate-slide-up">
