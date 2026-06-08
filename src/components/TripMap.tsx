@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff } from "lucide-react";
+import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Globe, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -80,6 +80,13 @@ const TripMap = () => {
   const [mapReady, setMapReady] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [placeDetails, setPlaceDetails] = useState<{
+    address?: string;
+    phone?: string;
+    website?: string;
+    hours?: string[];
+    openNow?: boolean;
+  } | null>(null);
   const sessionTokenRef = useRef<any>(null);
   const debounceRef = useRef<number | null>(null);
 
@@ -221,9 +228,20 @@ const TripMap = () => {
   const selectSuggestion = async (s: Suggestion) => {
     setShowSuggestions(false);
     setSearching(true);
+    setPlaceDetails(null);
     try {
       const place = s.prediction.toPlace();
-      await place.fetchFields({ fields: ["location", "displayName", "formattedAddress"] });
+      await place.fetchFields({
+        fields: [
+          "location",
+          "displayName",
+          "formattedAddress",
+          "internationalPhoneNumber",
+          "nationalPhoneNumber",
+          "websiteURI",
+          "regularOpeningHours",
+        ],
+      });
       const loc = place.location;
       if (!loc) throw new Error("No location");
       const label = place.formattedAddress || place.displayName || s.primary;
@@ -231,6 +249,18 @@ const TripMap = () => {
       setQuery(label);
       alertedRef.current = false;
       sessionTokenRef.current = null; // end session after selection
+
+      const hours = place.regularOpeningHours?.weekdayDescriptions as string[] | undefined;
+      const websiteRaw = place.websiteURI as unknown;
+      const website = typeof websiteRaw === "string" ? websiteRaw : websiteRaw?.toString?.();
+      setPlaceDetails({
+        address: place.formattedAddress || undefined,
+        phone: place.internationalPhoneNumber || place.nationalPhoneNumber || undefined,
+        website: website || undefined,
+        hours,
+        openNow: place.regularOpeningHours?.openNow,
+      });
+
       toast({ title: "Destination set 📍", description: s.primary });
     } catch (e) {
       toast({ title: "Couldn't load place", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" });
@@ -258,6 +288,7 @@ const TripMap = () => {
         return;
       }
       setDestination({ lat: r.lat, lng: r.lng, label: r.label });
+      setPlaceDetails({ address: r.label });
       alertedRef.current = false;
       toast({ title: "Destination set 📍", description: r.label.split(",").slice(0, 2).join(",") });
     } catch (e) {
@@ -401,6 +432,64 @@ const TripMap = () => {
                     {distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`} away
                   </span>
                 </span>
+              )}
+            </div>
+          )}
+
+          {placeDetails && (placeDetails.address || placeDetails.phone || placeDetails.website || placeDetails.hours?.length) && (
+            <div className="px-4 md:px-6 py-4 bg-card border-b border-border space-y-3 text-sm">
+              {placeDetails.address && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <span className="text-foreground">{placeDetails.address}</span>
+                </div>
+              )}
+              {placeDetails.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-primary shrink-0" />
+                  <a href={`tel:${placeDetails.phone.replace(/\s+/g, "")}`} className="hover:underline">
+                    {placeDetails.phone}
+                  </a>
+                </div>
+              )}
+              {placeDetails.website && (
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-primary shrink-0" />
+                  <a
+                    href={placeDetails.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline truncate max-w-full"
+                  >
+                    {placeDetails.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                  </a>
+                </div>
+              )}
+              {placeDetails.hours && placeDetails.hours.length > 0 && (
+                <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer list-none">
+                    <Clock className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-medium">Opening hours</span>
+                    {typeof placeDetails.openNow === "boolean" && (
+                      <span
+                        className={`ml-1 text-xs px-2 py-0.5 rounded-full ${
+                          placeDetails.openNow
+                            ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                            : "bg-red-500/15 text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {placeDetails.openNow ? "Open now" : "Closed"}
+                      </span>
+                    )}
+                    <span className="ml-auto text-xs text-muted-foreground group-open:hidden">Show</span>
+                    <span className="ml-auto text-xs text-muted-foreground hidden group-open:inline">Hide</span>
+                  </summary>
+                  <ul className="mt-2 pl-6 space-y-1 text-muted-foreground">
+                    {placeDetails.hours.map((h, i) => (
+                      <li key={i}>{h}</li>
+                    ))}
+                  </ul>
+                </details>
               )}
             </div>
           )}
