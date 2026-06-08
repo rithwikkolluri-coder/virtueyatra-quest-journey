@@ -174,8 +174,78 @@ const TripMap = () => {
     }
   }, [userPos, mapReady]);
 
+  // Fetch Places autocomplete suggestions (debounced)
+  useEffect(() => {
+    if (!mapReady) return;
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    const q = query.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const g = (window as any).google;
+        const { AutocompleteSuggestion, AutocompleteSessionToken } = await g.maps.importLibrary("places");
+        if (!sessionTokenRef.current) sessionTokenRef.current = new AutocompleteSessionToken();
+        const request: any = {
+          input: q,
+          sessionToken: sessionTokenRef.current,
+          includedRegionCodes: ["in"],
+        };
+        if (destination) {
+          request.locationBias = {
+            center: { lat: destination.lat, lng: destination.lng },
+            radius: 50000,
+          };
+        }
+        const { suggestions: results } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+        const mapped: Suggestion[] = (results || [])
+          .filter((s: any) => s.placePrediction)
+          .map((s: any, i: number) => ({
+            id: s.placePrediction.placeId || String(i),
+            primary: s.placePrediction.mainText?.text || s.placePrediction.text?.text || "",
+            secondary: s.placePrediction.secondaryText?.text || "",
+            prediction: s.placePrediction,
+          }));
+        setSuggestions(mapped);
+        setShowSuggestions(true);
+      } catch (e) {
+        console.error("autocomplete error", e);
+      }
+    }, 250);
+
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [query, mapReady, destination]);
+
+  const selectSuggestion = async (s: Suggestion) => {
+    setShowSuggestions(false);
+    setSearching(true);
+    try {
+      const place = s.prediction.toPlace();
+      await place.fetchFields({ fields: ["location", "displayName", "formattedAddress"] });
+      const loc = place.location;
+      if (!loc) throw new Error("No location");
+      const label = place.formattedAddress || place.displayName || s.primary;
+      setDestination({ lat: loc.lat(), lng: loc.lng(), label });
+      setQuery(label);
+      alertedRef.current = false;
+      sessionTokenRef.current = null; // end session after selection
+      toast({ title: "Destination set 📍", description: s.primary });
+    } catch (e) {
+      toast({ title: "Couldn't load place", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" });
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const handleSearch = async () => {
     if (!query.trim()) return;
+    // If suggestions are available, pick the first one
+    if (suggestions.length > 0) {
+      await selectSuggestion(suggestions[0]);
+      return;
+    }
     setSearching(true);
     try {
       const { data, error } = await supabase.functions.invoke("geocode", {
