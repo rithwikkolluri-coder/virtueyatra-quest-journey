@@ -66,6 +66,8 @@ const loadGoogleMaps = (): Promise<void> => {
   return mapsLoadPromise;
 };
 
+interface Suggestion { id: string; primary: string; secondary: string; prediction: any; }
+
 const TripMap = () => {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
@@ -76,6 +78,10 @@ const TripMap = () => {
   const [distance, setDistance] = useState<number | null>(null);
   const [alertsOn, setAlertsOn] = useState(true);
   const [mapReady, setMapReady] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const sessionTokenRef = useRef<any>(null);
+  const debounceRef = useRef<number | null>(null);
 
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -168,8 +174,78 @@ const TripMap = () => {
     }
   }, [userPos, mapReady]);
 
+  // Fetch Places autocomplete suggestions (debounced)
+  useEffect(() => {
+    if (!mapReady) return;
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    const q = query.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const g = (window as any).google;
+        const { AutocompleteSuggestion, AutocompleteSessionToken } = await g.maps.importLibrary("places");
+        if (!sessionTokenRef.current) sessionTokenRef.current = new AutocompleteSessionToken();
+        const request: any = {
+          input: q,
+          sessionToken: sessionTokenRef.current,
+          includedRegionCodes: ["in"],
+        };
+        if (destination) {
+          request.locationBias = {
+            center: { lat: destination.lat, lng: destination.lng },
+            radius: 50000,
+          };
+        }
+        const { suggestions: results } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+        const mapped: Suggestion[] = (results || [])
+          .filter((s: any) => s.placePrediction)
+          .map((s: any, i: number) => ({
+            id: s.placePrediction.placeId || String(i),
+            primary: s.placePrediction.mainText?.text || s.placePrediction.text?.text || "",
+            secondary: s.placePrediction.secondaryText?.text || "",
+            prediction: s.placePrediction,
+          }));
+        setSuggestions(mapped);
+        setShowSuggestions(true);
+      } catch (e) {
+        console.error("autocomplete error", e);
+      }
+    }, 250);
+
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [query, mapReady, destination]);
+
+  const selectSuggestion = async (s: Suggestion) => {
+    setShowSuggestions(false);
+    setSearching(true);
+    try {
+      const place = s.prediction.toPlace();
+      await place.fetchFields({ fields: ["location", "displayName", "formattedAddress"] });
+      const loc = place.location;
+      if (!loc) throw new Error("No location");
+      const label = place.formattedAddress || place.displayName || s.primary;
+      setDestination({ lat: loc.lat(), lng: loc.lng(), label });
+      setQuery(label);
+      alertedRef.current = false;
+      sessionTokenRef.current = null; // end session after selection
+      toast({ title: "Destination set 📍", description: s.primary });
+    } catch (e) {
+      toast({ title: "Couldn't load place", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" });
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const handleSearch = async () => {
     if (!query.trim()) return;
+    // If suggestions are available, pick the first one
+    if (suggestions.length > 0) {
+      await selectSuggestion(suggestions[0]);
+      return;
+    }
     setSearching(true);
     try {
       const { data, error } = await supabase.functions.invoke("geocode", {
@@ -257,14 +333,39 @@ const TripMap = () => {
 
         <Card className="overflow-hidden border-border/50 shadow-2xl">
           <div className="p-4 md:p-6 bg-card border-b border-border flex flex-col md:flex-row gap-3 md:items-center">
-            <div className="flex-1 flex gap-2">
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Search a destination (e.g. Charminar, Hyderabad)"
-                className="flex-1"
-              />
+            <div className="flex-1 flex gap-2 relative">
+              <div className="flex-1 relative">
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  placeholder="Search a place (e.g. Charminar, Hyderabad)"
+                  className="w-full"
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-72 overflow-y-auto">
+                    {suggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => selectSuggestion(s)}
+                        className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground flex items-start gap-2 border-b border-border/40 last:border-b-0"
+                      >
+                        <MapPin className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-medium truncate">{s.primary}</span>
+                          {s.secondary && (
+                            <span className="block text-xs text-muted-foreground truncate">{s.secondary}</span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button onClick={handleSearch} disabled={searching} className="bg-gradient-to-r from-primary to-travel-ocean">
                 {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               </Button>
