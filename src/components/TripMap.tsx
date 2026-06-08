@@ -288,6 +288,7 @@ const TripMap = () => {
         return;
       }
       setDestination({ lat: r.lat, lng: r.lng, label: r.label });
+      setPlaceDetails({ address: r.label });
       alertedRef.current = false;
       toast({ title: "Destination set 📍", description: r.label.split(",").slice(0, 2).join(",") });
     } catch (e) {
