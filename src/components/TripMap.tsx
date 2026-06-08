@@ -333,14 +333,39 @@ const TripMap = () => {
 
         <Card className="overflow-hidden border-border/50 shadow-2xl">
           <div className="p-4 md:p-6 bg-card border-b border-border flex flex-col md:flex-row gap-3 md:items-center">
-            <div className="flex-1 flex gap-2">
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Search a destination (e.g. Charminar, Hyderabad)"
-                className="flex-1"
-              />
+            <div className="flex-1 flex gap-2 relative">
+              <div className="flex-1 relative">
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  placeholder="Search a place (e.g. Charminar, Hyderabad)"
+                  className="w-full"
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-72 overflow-y-auto">
+                    {suggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => selectSuggestion(s)}
+                        className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground flex items-start gap-2 border-b border-border/40 last:border-b-0"
+                      >
+                        <MapPin className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-medium truncate">{s.primary}</span>
+                          {s.secondary && (
+                            <span className="block text-xs text-muted-foreground truncate">{s.secondary}</span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button onClick={handleSearch} disabled={searching} className="bg-gradient-to-r from-primary to-travel-ocean">
                 {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               </Button>
