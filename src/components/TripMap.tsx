@@ -1,32 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Fix default marker icons (Leaflet + bundlers issue)
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-const userIcon = L.divIcon({
-  className: "user-loc-icon",
-  html: `<div style="width:18px;height:18px;border-radius:9999px;background:hsl(var(--primary));box-shadow:0 0 0 6px hsla(var(--primary)/0.25);border:2px solid white;"></div>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-});
+import { supabase } from "@/integrations/supabase/client";
 
 interface LatLng { lat: number; lng: number; }
 
 const ALERT_RADIUS_M = 500;
+const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
+const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
 
 const haversine = (a: LatLng, b: LatLng) => {
   const R = 6371000;
@@ -37,15 +22,6 @@ const haversine = (a: LatLng, b: LatLng) => {
   return 2 * R * Math.asin(Math.sqrt(s));
 };
 
-const FlyTo = ({ pos }: { pos: LatLng | null }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (pos) map.flyTo([pos.lat, pos.lng], 14, { duration: 1.2 });
-  }, [pos, map]);
-  return null;
-};
-
-// Simple alarm using WebAudio (no asset needed)
 const playAlarm = () => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -69,6 +45,27 @@ const playAlarm = () => {
   }
 };
 
+// Load Google Maps JS API once
+let mapsLoadPromise: Promise<void> | null = null;
+const loadGoogleMaps = (): Promise<void> => {
+  if (typeof window === "undefined") return Promise.reject(new Error("no window"));
+  if ((window as any).google?.maps) return Promise.resolve();
+  if (mapsLoadPromise) return mapsLoadPromise;
+  if (!BROWSER_KEY) return Promise.reject(new Error("Google Maps browser key missing"));
+
+  mapsLoadPromise = new Promise<void>((resolve, reject) => {
+    (window as any).__initGoogleMaps = () => resolve();
+    const script = document.createElement("script");
+    const channel = TRACKING_ID ? `&channel=${TRACKING_ID}` : "";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${BROWSER_KEY}&loading=async&callback=__initGoogleMaps${channel}`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => reject(new Error("Failed to load Google Maps"));
+    document.head.appendChild(script);
+  });
+  return mapsLoadPromise;
+};
+
 const TripMap = () => {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
@@ -78,30 +75,117 @@ const TripMap = () => {
   const [tracking, setTracking] = useState(false);
   const [distance, setDistance] = useState<number | null>(null);
   const [alertsOn, setAlertsOn] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
+
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const destMarkerRef = useRef<any>(null);
+  const destCircleRef = useRef<any>(null);
+  const userMarkerRef = useRef<any>(null);
   const watchId = useRef<number | null>(null);
   const alertedRef = useRef(false);
 
-  const center: [number, number] = [20.5937, 78.9629]; // India
+  // Init map
+  useEffect(() => {
+    let cancelled = false;
+    loadGoogleMaps()
+      .then(() => {
+        if (cancelled || !mapDivRef.current) return;
+        const g = (window as any).google;
+        mapRef.current = new g.maps.Map(mapDivRef.current, {
+          center: { lat: 20.5937, lng: 78.9629 },
+          zoom: 5,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        });
+        setMapReady(true);
+      })
+      .catch((e) => {
+        console.error(e);
+        toast({ title: "Map failed to load", description: e.message, variant: "destructive" });
+      });
+    return () => { cancelled = true; };
+  }, [toast]);
+
+  // Update destination marker + circle
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    const g = (window as any).google;
+    if (!destination) {
+      destMarkerRef.current?.setMap(null);
+      destCircleRef.current?.setMap(null);
+      destMarkerRef.current = null;
+      destCircleRef.current = null;
+      return;
+    }
+    const pos = { lat: destination.lat, lng: destination.lng };
+    if (!destMarkerRef.current) {
+      destMarkerRef.current = new g.maps.Marker({ map: mapRef.current, position: pos, title: destination.label });
+    } else {
+      destMarkerRef.current.setPosition(pos);
+      destMarkerRef.current.setTitle(destination.label);
+    }
+    if (!destCircleRef.current) {
+      destCircleRef.current = new g.maps.Circle({
+        map: mapRef.current,
+        center: pos,
+        radius: ALERT_RADIUS_M,
+        strokeColor: "#f59e0b",
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: "#f59e0b",
+        fillOpacity: 0.15,
+      });
+    } else {
+      destCircleRef.current.setCenter(pos);
+    }
+    mapRef.current.panTo(pos);
+    mapRef.current.setZoom(14);
+  }, [destination, mapReady]);
+
+  // Update user marker
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !userPos) return;
+    const g = (window as any).google;
+    const pos = { lat: userPos.lat, lng: userPos.lng };
+    if (!userMarkerRef.current) {
+      userMarkerRef.current = new g.maps.Marker({
+        map: mapRef.current,
+        position: pos,
+        title: "You are here",
+        icon: {
+          path: g.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#2563eb",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 2,
+        },
+      });
+    } else {
+      userMarkerRef.current.setPosition(pos);
+    }
+  }, [userPos, mapReady]);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query + ", India")}`,
-        { headers: { Accept: "application/json" } }
-      );
-      const data = await res.json();
-      if (!data?.length) {
+      const { data, error } = await supabase.functions.invoke("geocode", {
+        body: { address: `${query.trim()}, India` },
+      });
+      if (error) throw error;
+      const r = data?.result;
+      if (!r) {
         toast({ title: "Not found", description: "Try a more specific place name.", variant: "destructive" });
         return;
       }
-      const d = data[0];
-      setDestination({ lat: parseFloat(d.lat), lng: parseFloat(d.lon), label: d.display_name });
+      setDestination({ lat: r.lat, lng: r.lng, label: r.label });
       alertedRef.current = false;
-      toast({ title: "Destination set 📍", description: d.display_name.split(",").slice(0, 2).join(",") });
+      toast({ title: "Destination set 📍", description: r.label.split(",").slice(0, 2).join(",") });
     } catch (e) {
-      toast({ title: "Search failed", description: "Check your connection and try again.", variant: "destructive" });
+      toast({ title: "Search failed", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" });
     } finally {
       setSearching(false);
     }
@@ -137,7 +221,6 @@ const TripMap = () => {
 
   useEffect(() => () => stopTracking(), [stopTracking]);
 
-  // Distance + proximity alert
   useEffect(() => {
     if (!destination || !userPos) return;
     const d = haversine(userPos, destination);
@@ -156,7 +239,6 @@ const TripMap = () => {
         });
       }
     }
-    // Reset alert if user moves far away again
     if (d > ALERT_RADIUS_M * 2) alertedRef.current = false;
   }, [userPos, destination, alertsOn, toast]);
 
@@ -222,32 +304,7 @@ const TripMap = () => {
             </div>
           )}
 
-          <div className="h-[500px] w-full">
-            <MapContainer center={center} zoom={5} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-              <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
-              />
-              {destination && (
-                <>
-                  <Marker position={[destination.lat, destination.lng]}>
-                    <Popup>{destination.label}</Popup>
-                  </Marker>
-                  <Circle
-                    center={[destination.lat, destination.lng]}
-                    radius={ALERT_RADIUS_M}
-                    pathOptions={{ color: "hsl(var(--secondary))", fillColor: "hsl(var(--secondary))", fillOpacity: 0.15 }}
-                  />
-                  <FlyTo pos={destination} />
-                </>
-              )}
-              {userPos && (
-                <Marker position={[userPos.lat, userPos.lng]} icon={userIcon}>
-                  <Popup>You are here</Popup>
-                </Marker>
-              )}
-            </MapContainer>
-          </div>
+          <div ref={mapDivRef} className="h-[500px] w-full bg-muted" />
         </Card>
       </div>
     </section>
