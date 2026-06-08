@@ -66,6 +66,8 @@ const loadGoogleMaps = (): Promise<void> => {
   return mapsLoadPromise;
 };
 
+interface Suggestion { id: string; primary: string; secondary: string; prediction: any; }
+
 const TripMap = () => {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
@@ -76,6 +78,10 @@ const TripMap = () => {
   const [distance, setDistance] = useState<number | null>(null);
   const [alertsOn, setAlertsOn] = useState(true);
   const [mapReady, setMapReady] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const sessionTokenRef = useRef<any>(null);
+  const debounceRef = useRef<number | null>(null);
 
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
