@@ -436,6 +436,64 @@ const TripMap = () => {
             </div>
           )}
 
+          {placeDetails && (placeDetails.address || placeDetails.phone || placeDetails.website || placeDetails.hours?.length) && (
+            <div className="px-4 md:px-6 py-4 bg-card border-b border-border space-y-3 text-sm">
+              {placeDetails.address && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <span className="text-foreground">{placeDetails.address}</span>
+                </div>
+              )}
+              {placeDetails.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-primary shrink-0" />
+                  <a href={`tel:${placeDetails.phone.replace(/\s+/g, "")}`} className="hover:underline">
+                    {placeDetails.phone}
+                  </a>
+                </div>
+              )}
+              {placeDetails.website && (
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-primary shrink-0" />
+                  <a
+                    href={placeDetails.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline truncate max-w-full"
+                  >
+                    {placeDetails.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                  </a>
+                </div>
+              )}
+              {placeDetails.hours && placeDetails.hours.length > 0 && (
+                <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer list-none">
+                    <Clock className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-medium">Opening hours</span>
+                    {typeof placeDetails.openNow === "boolean" && (
+                      <span
+                        className={`ml-1 text-xs px-2 py-0.5 rounded-full ${
+                          placeDetails.openNow
+                            ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                            : "bg-red-500/15 text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {placeDetails.openNow ? "Open now" : "Closed"}
+                      </span>
+                    )}
+                    <span className="ml-auto text-xs text-muted-foreground group-open:hidden">Show</span>
+                    <span className="ml-auto text-xs text-muted-foreground hidden group-open:inline">Hide</span>
+                  </summary>
+                  <ul className="mt-2 pl-6 space-y-1 text-muted-foreground">
+                    {placeDetails.hours.map((h, i) => (
+                      <li key={i}>{h}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
+          )}
+
           <div ref={mapDivRef} className="h-[500px] w-full bg-muted" />
         </Card>
       </div>
