@@ -228,9 +228,20 @@ const TripMap = () => {
   const selectSuggestion = async (s: Suggestion) => {
     setShowSuggestions(false);
     setSearching(true);
+    setPlaceDetails(null);
     try {
       const place = s.prediction.toPlace();
-      await place.fetchFields({ fields: ["location", "displayName", "formattedAddress"] });
+      await place.fetchFields({
+        fields: [
+          "location",
+          "displayName",
+          "formattedAddress",
+          "internationalPhoneNumber",
+          "nationalPhoneNumber",
+          "websiteURI",
+          "regularOpeningHours",
+        ],
+      });
       const loc = place.location;
       if (!loc) throw new Error("No location");
       const label = place.formattedAddress || place.displayName || s.primary;
@@ -238,6 +249,18 @@ const TripMap = () => {
       setQuery(label);
       alertedRef.current = false;
       sessionTokenRef.current = null; // end session after selection
+
+      const hours = place.regularOpeningHours?.weekdayDescriptions as string[] | undefined;
+      const websiteRaw = place.websiteURI as unknown;
+      const website = typeof websiteRaw === "string" ? websiteRaw : websiteRaw?.toString?.();
+      setPlaceDetails({
+        address: place.formattedAddress || undefined,
+        phone: place.internationalPhoneNumber || place.nationalPhoneNumber || undefined,
+        website: website || undefined,
+        hours,
+        openNow: place.regularOpeningHours?.openNow,
+      });
+
       toast({ title: "Destination set 📍", description: s.primary });
     } catch (e) {
       toast({ title: "Couldn't load place", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" });
