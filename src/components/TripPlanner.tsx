@@ -426,8 +426,14 @@ const TripPlanner = () => {
                     <Input
                       id="startDate"
                       type="date"
+                      min={new Date().toISOString().split('T')[0]}
                       value={formData.startDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        startDate: e.target.value,
+                        // If end date is before new start date, reset it
+                        endDate: prev.endDate && prev.endDate < e.target.value ? "" : prev.endDate,
+                      }))}
                       className="border-border/50 focus:border-primary"
                     />
                   </div>
@@ -440,6 +446,7 @@ const TripPlanner = () => {
                     <Input
                       id="endDate"
                       type="date"
+                      min={formData.startDate || new Date().toISOString().split('T')[0]}
                       value={formData.endDate}
                       onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
                       className="border-border/50 focus:border-primary"
