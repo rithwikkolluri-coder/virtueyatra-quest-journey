@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { MapPin, Sun, Cloud, Moon, Lightbulb, Loader2, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ItineraryProps {
   destination: string;
@@ -30,11 +31,13 @@ const Itinerary = ({ destination, startDate, endDate, interests, travelers, budg
       setAiError(null);
       setAiDays(null);
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Please sign in to generate an AI itinerary.");
         const resp = await fetch(ITINERARY_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ destination, startDate, endDate, interests, travelers, budget, specialRequests }),
         });
