@@ -159,6 +159,79 @@ const TripMap = () => {
     mapRef.current.setZoom(14);
   }, [destination, mapReady]);
 
+  // Load nearby itinerary places (top attractions) for the selected destination
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    const g = (window as any).google;
+
+    // Clear previous attraction markers
+    attractionMarkersRef.current.forEach((m) => m.setMap(null));
+    attractionMarkersRef.current = [];
+    attractionInfoRef.current?.close?.();
+
+    if (!destination) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { Place } = await g.maps.importLibrary("places");
+        const { results } = await Place.searchByText({
+          textQuery: `top tourist attractions in ${destination.label.split(",")[0]}`,
+          fields: ["id", "displayName", "location", "formattedAddress", "types"],
+          locationBias: {
+            center: { lat: destination.lat, lng: destination.lng },
+            radius: 25000,
+          },
+          maxResultCount: 10,
+          region: "in",
+        });
+        if (cancelled || !results?.length) return;
+
+        const info = new g.maps.InfoWindow();
+        attractionInfoRef.current = info;
+        const bounds = new g.maps.LatLngBounds();
+        bounds.extend({ lat: destination.lat, lng: destination.lng });
+
+        results.forEach((p: any, i: number) => {
+          if (!p.location) return;
+          const pos = { lat: p.location.lat(), lng: p.location.lng() };
+          const marker = new g.maps.Marker({
+            map: mapRef.current,
+            position: pos,
+            title: p.displayName,
+            label: { text: String(i + 1), color: "#ffffff", fontSize: "12px", fontWeight: "600" },
+            icon: {
+              path: g.maps.SymbolPath.CIRCLE,
+              scale: 12,
+              fillColor: "#0ea5e9",
+              fillOpacity: 1,
+              strokeColor: "#ffffff",
+              strokeWeight: 2,
+            },
+          });
+          marker.addListener("click", () => {
+            info.setContent(
+              `<div style="font-size:13px;max-width:220px">
+                 <strong>${p.displayName ?? ""}</strong><br/>
+                 <span style="color:#666">${p.formattedAddress ?? ""}</span>
+               </div>`
+            );
+            info.open({ map: mapRef.current, anchor: marker });
+          });
+          attractionMarkersRef.current.push(marker);
+          bounds.extend(pos);
+        });
+
+        mapRef.current.fitBounds(bounds, 60);
+      } catch (e) {
+        console.error("nearby attractions error", e);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [destination, mapReady]);
+
+
   // Update user marker
   useEffect(() => {
     if (!mapReady || !mapRef.current || !userPos) return;
