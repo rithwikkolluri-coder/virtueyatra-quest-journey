@@ -165,9 +165,11 @@ const TripMap = () => {
     if (!mapReady || !mapRef.current) return;
     const g = (window as any).google;
 
-    // Clear previous attraction markers
+    // Clear previous attraction markers and route polyline
     attractionMarkersRef.current.forEach((m) => m.setMap(null));
     attractionMarkersRef.current = [];
+    routePolylineRef.current?.setMap(null);
+    routePolylineRef.current = null;
     attractionInfoRef.current?.close?.();
 
     if (!destination) return;
