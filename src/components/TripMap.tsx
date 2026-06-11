@@ -548,6 +548,24 @@ const TripMap = () => {
                   </span>
                 </span>
               )}
+              {routeDistance !== null && (
+                <span className="flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-primary" />
+                  <span>
+                    {(routeDistance / 1000).toFixed(1)} km route
+                  </span>
+                </span>
+              )}
+              {routeTimeMin !== null && (
+                <span className="flex items-center gap-2">
+                  <Timer className="w-4 h-4 text-primary" />
+                  <span>
+                    {routeTimeMin < 60
+                      ? `${Math.round(routeTimeMin)} min`
+                      : `${Math.floor(routeTimeMin / 60)}h ${Math.round(routeTimeMin % 60)}m`} est.
+                  </span>
+                </span>
+              )}
             </div>
           )}
 
