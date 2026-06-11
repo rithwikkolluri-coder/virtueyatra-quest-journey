@@ -97,6 +97,7 @@ const TripMap = () => {
   const userMarkerRef = useRef<any>(null);
   const attractionMarkersRef = useRef<any[]>([]);
   const attractionInfoRef = useRef<any>(null);
+  const routePolylineRef = useRef<any>(null);
   const watchId = useRef<number | null>(null);
   const alertedRef = useRef(false);
 
