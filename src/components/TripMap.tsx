@@ -226,6 +226,27 @@ const TripMap = () => {
         });
 
         mapRef.current.fitBounds(bounds, 60);
+
+        // Draw a route polyline connecting destination → attractions in order
+        const path = [
+          { lat: destination.lat, lng: destination.lng },
+          ...attractionMarkersRef.current.map((m) => m.getPosition().toJSON()),
+        ];
+        routePolylineRef.current = new g.maps.Polyline({
+          path,
+          geodesic: true,
+          strokeColor: "#0ea5e9",
+          strokeOpacity: 0.7,
+          strokeWeight: 3,
+          icons: [
+            {
+              icon: { path: g.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: "#0ea5e9", fillColor: "#0ea5e9", fillOpacity: 1 },
+              offset: "100%",
+              repeat: "60px",
+            },
+          ],
+        });
+        routePolylineRef.current.setMap(mapRef.current);
       } catch (e) {
         console.error("nearby attractions error", e);
       }
