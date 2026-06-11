@@ -251,6 +251,18 @@ const TripMap = () => {
           ],
         });
         routePolylineRef.current.setMap(mapRef.current);
+
+        // Compute total straight-line distance and estimate road distance + time
+        const allPoints = path;
+        let totalM = 0;
+        for (let i = 1; i < allPoints.length; i++) {
+          totalM += haversine(allPoints[i - 1], allPoints[i]);
+        }
+        const roadDistanceM = totalM * 1.3; // rough road-distance multiplier
+        const avgSpeedKmh = 35; // tourist driving in India (mixed roads)
+        const timeMin = (roadDistanceM / 1000 / avgSpeedKmh) * 60;
+        setRouteDistance(roadDistanceM);
+        setRouteTimeMin(timeMin);
       } catch (e) {
         console.error("nearby attractions error", e);
       }
