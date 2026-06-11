@@ -95,6 +95,8 @@ const TripMap = () => {
   const destMarkerRef = useRef<any>(null);
   const destCircleRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
+  const attractionMarkersRef = useRef<any[]>([]);
+  const attractionInfoRef = useRef<any>(null);
   const watchId = useRef<number | null>(null);
   const alertedRef = useRef(false);
 
