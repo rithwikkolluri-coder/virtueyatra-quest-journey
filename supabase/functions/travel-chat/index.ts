@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,9 +10,38 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Require authentication to prevent unauthenticated AI credit abuse
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user }, error: userErr } = await supabase.auth.getUser(
+      authHeader.replace("Bearer ", ""),
+    );
+    if (userErr || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Sanitize client-supplied messages to prevent prompt injection via role hijacking
+    const safeMessages = Array.isArray(messages)
+      ? messages
+          .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+          .slice(-50)
+          .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }))
+      : [];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -39,9 +69,9 @@ serve(async (req) => {
 - If you don't know something specific, be honest and suggest where to find out
 - Support Hindi, Telugu and English — respond in whatever language the user writes in
 
-Remember: You're not a formal travel agent. You're that one friend everyone wishes they had who knows all the best travel hacks! 🌍`
+Remember: You're not a formal travel agent. You're that one friend everyone wishes they had who knows all the best travel hacks! 🌍`,
           },
-          ...messages,
+          ...safeMessages,
         ],
         stream: true,
         temperature: 1.2,
