@@ -136,9 +136,21 @@ const Destinations = () => {
       result = result.filter(d => {
         const name = t(d.nameKey).toLowerCase();
         const location = t(d.locationKey).toLowerCase();
-        return name.includes(query) || location.includes(query);
+        // Match if name/location starts with the query, any word starts with it,
+        // or it appears anywhere — so typing "H" surfaces Himalayan, Heritage, etc.
+        const nameWords = name.split(/\s+/);
+        const locWords = location.split(/\s+/);
+        return (
+          name.startsWith(query) ||
+          location.startsWith(query) ||
+          nameWords.some(w => w.startsWith(query)) ||
+          locWords.some(w => w.startsWith(query)) ||
+          name.includes(query) ||
+          location.includes(query)
+        );
       });
     }
+    
     
     return result;
   }, [activeTab, searchQuery, t, destinations]);
