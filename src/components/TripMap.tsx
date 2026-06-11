@@ -172,6 +172,8 @@ const TripMap = () => {
     attractionMarkersRef.current = [];
     routePolylineRef.current?.setMap(null);
     routePolylineRef.current = null;
+    setRouteDistance(null);
+    setRouteTimeMin(null);
     attractionInfoRef.current?.close?.();
 
     if (!destination) return;
