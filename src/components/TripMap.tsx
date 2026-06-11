@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Globe, Clock } from "lucide-react";
+import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Globe, Clock, Timer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -80,6 +80,8 @@ const TripMap = () => {
   const [mapReady, setMapReady] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [routeDistance, setRouteDistance] = useState<number | null>(null);
+  const [routeTimeMin, setRouteTimeMin] = useState<number | null>(null);
   const [placeDetails, setPlaceDetails] = useState<{
     address?: string;
     phone?: string;
@@ -170,6 +172,8 @@ const TripMap = () => {
     attractionMarkersRef.current = [];
     routePolylineRef.current?.setMap(null);
     routePolylineRef.current = null;
+    setRouteDistance(null);
+    setRouteTimeMin(null);
     attractionInfoRef.current?.close?.();
 
     if (!destination) return;
@@ -247,6 +251,18 @@ const TripMap = () => {
           ],
         });
         routePolylineRef.current.setMap(mapRef.current);
+
+        // Compute total straight-line distance and estimate road distance + time
+        const allPoints = path;
+        let totalM = 0;
+        for (let i = 1; i < allPoints.length; i++) {
+          totalM += haversine(allPoints[i - 1], allPoints[i]);
+        }
+        const roadDistanceM = totalM * 1.3; // rough road-distance multiplier
+        const avgSpeedKmh = 35; // tourist driving in India (mixed roads)
+        const timeMin = (roadDistanceM / 1000 / avgSpeedKmh) * 60;
+        setRouteDistance(roadDistanceM);
+        setRouteTimeMin(timeMin);
       } catch (e) {
         console.error("nearby attractions error", e);
       }
@@ -529,6 +545,24 @@ const TripMap = () => {
                   <BellRing className={`w-4 h-4 ${distance <= ALERT_RADIUS_M ? "text-secondary animate-pulse" : "text-muted-foreground"}`} />
                   <span>
                     {distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(2)} km`} away
+                  </span>
+                </span>
+              )}
+              {routeDistance !== null && (
+                <span className="flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-primary" />
+                  <span>
+                    {(routeDistance / 1000).toFixed(1)} km route
+                  </span>
+                </span>
+              )}
+              {routeTimeMin !== null && (
+                <span className="flex items-center gap-2">
+                  <Timer className="w-4 h-4 text-primary" />
+                  <span>
+                    {routeTimeMin < 60
+                      ? `${Math.round(routeTimeMin)} min`
+                      : `${Math.floor(routeTimeMin / 60)}h ${Math.round(routeTimeMin % 60)}m`} est.
                   </span>
                 </span>
               )}
