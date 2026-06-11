@@ -80,6 +80,8 @@ const TripMap = () => {
   const [mapReady, setMapReady] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [routeDistance, setRouteDistance] = useState<number | null>(null);
+  const [routeTimeMin, setRouteTimeMin] = useState<number | null>(null);
   const [placeDetails, setPlaceDetails] = useState<{
     address?: string;
     phone?: string;
