@@ -627,7 +627,53 @@ const TripMap = () => {
             </div>
           )}
 
-          <div ref={mapDivRef} className="h-[500px] w-full bg-muted" />
+          <div className="relative">
+            <div ref={mapDivRef} className={`h-[500px] w-full bg-muted ${online ? "" : "hidden"}`} />
+            {!online && (
+              <div className="h-[500px] w-full bg-muted/40 flex flex-col items-center justify-center gap-6 p-6 text-center">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <WifiOff className="w-5 h-5" />
+                  <span className="text-sm font-medium">Offline mode — GPS tracking still works</span>
+                </div>
+
+                {destination ? (
+                  <>
+                    <Compass
+                      className="w-24 h-24 text-primary transition-transform duration-500"
+                      style={{ transform: `rotate(${bearing ?? 0}deg)` }}
+                    />
+                    <div>
+                      <p className="text-4xl font-bold">
+                        {distance === null
+                          ? "—"
+                          : distance < 1000
+                          ? `${Math.round(distance)} m`
+                          : `${(distance / 1000).toFixed(2)} km`}
+                      </p>
+                      <p className="text-muted-foreground mt-1">
+                        to {destination.label.split(",")[0]}
+                      </p>
+                    </div>
+                    {distance !== null && distance <= ALERT_RADIUS_M && (
+                      <Badge className="bg-secondary text-secondary-foreground animate-pulse">
+                        Within 500 m — get ready!
+                      </Badge>
+                    )}
+                    {!tracking && (
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        Tap “Start tracking” to use your device GPS. No internet needed.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    No saved destination. Connect to the internet once to search a place — it’s stored on
+                    your device and the 500 m alarm keeps working offline afterwards.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
     </section>
