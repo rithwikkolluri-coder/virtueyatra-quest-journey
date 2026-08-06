@@ -342,7 +342,7 @@ const TripMap = () => {
 
   // Fetch Places autocomplete suggestions (debounced)
   useEffect(() => {
-    if (!mapReady) return;
+    if (!mapReady || !online) return;
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     const q = query.trim();
     if (q.length < 2) { setSuggestions([]); return; }
