@@ -83,10 +83,19 @@ const TripMap = () => {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const [destination, setDestination] = useState<(LatLng & { label: string }) | null>(null);
+  const [destination, setDestination] = useState<(LatLng & { label: string }) | null>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
   const [userPos, setUserPos] = useState<LatLng | null>(null);
   const [tracking, setTracking] = useState(false);
   const [distance, setDistance] = useState<number | null>(null);
+  const [bearing, setBearing] = useState<number | null>(null);
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [alertsOn, setAlertsOn] = useState(true);
   const [mapReady, setMapReady] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
