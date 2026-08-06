@@ -495,6 +495,7 @@ const TripMap = () => {
     if (!destination || !userPos) return;
     const d = haversine(userPos, destination);
     setDistance(d);
+    setBearing(bearingBetween(userPos, destination));
     if (alertsOn && d <= ALERT_RADIUS_M && !alertedRef.current) {
       alertedRef.current = true;
       playAlarm();
