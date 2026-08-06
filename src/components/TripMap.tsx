@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Globe, Clock, Timer } from "lucide-react";
+import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Globe, Clock, Timer, WifiOff, Compass } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +21,17 @@ const haversine = (a: LatLng, b: LatLng) => {
   const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(s));
 };
+
+const bearingBetween = (a: LatLng, b: LatLng) => {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const y = Math.sin(toRad(b.lng - a.lng)) * Math.cos(toRad(b.lat));
+  const x =
+    Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
+    Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(toRad(b.lng - a.lng));
+  return (Math.atan2(y, x) * 180) / Math.PI;
+};
+
+const STORAGE_KEY = "virtueyatra.tripmap.destination";
 
 const playAlarm = () => {
   try {
@@ -72,10 +83,19 @@ const TripMap = () => {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const [destination, setDestination] = useState<(LatLng & { label: string }) | null>(null);
+  const [destination, setDestination] = useState<(LatLng & { label: string }) | null>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
   const [userPos, setUserPos] = useState<LatLng | null>(null);
   const [tracking, setTracking] = useState(false);
   const [distance, setDistance] = useState<number | null>(null);
+  const [bearing, setBearing] = useState<number | null>(null);
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [alertsOn, setAlertsOn] = useState(true);
   const [mapReady, setMapReady] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -103,8 +123,33 @@ const TripMap = () => {
   const watchId = useRef<number | null>(null);
   const alertedRef = useRef(false);
 
-  // Init map
+  // Online/offline awareness
   useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => {
+      setOnline(false);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    };
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  // Persist destination so it survives reloads / offline use
+  useEffect(() => {
+    try {
+      if (destination) localStorage.setItem(STORAGE_KEY, JSON.stringify(destination));
+      else localStorage.removeItem(STORAGE_KEY);
+    } catch { /* ignore */ }
+  }, [destination]);
+
+  // Init map (needs network)
+  useEffect(() => {
+    if (!online || mapRef.current) return;
     let cancelled = false;
     loadGoogleMaps()
       .then(() => {
@@ -121,10 +166,9 @@ const TripMap = () => {
       })
       .catch((e) => {
         console.error(e);
-        toast({ title: "Map failed to load", description: e.message, variant: "destructive" });
       });
     return () => { cancelled = true; };
-  }, [toast]);
+  }, [toast, online]);
 
   // Update destination marker + circle
   useEffect(() => {
@@ -298,7 +342,7 @@ const TripMap = () => {
 
   // Fetch Places autocomplete suggestions (debounced)
   useEffect(() => {
-    if (!mapReady) return;
+    if (!mapReady || !online) return;
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     const q = query.trim();
     if (q.length < 2) { setSuggestions([]); return; }
@@ -385,6 +429,10 @@ const TripMap = () => {
   };
 
   const handleSearch = async () => {
+    if (!online) {
+      toast({ title: "You're offline", description: "Search needs internet — your saved destination still works.", variant: "destructive" });
+      return;
+    }
     if (!query.trim()) return;
     // If suggestions are available, pick the first one
     if (suggestions.length > 0) {
@@ -447,6 +495,7 @@ const TripMap = () => {
     if (!destination || !userPos) return;
     const d = haversine(userPos, destination);
     setDistance(d);
+    setBearing(bearingBetween(userPos, destination));
     if (alertsOn && d <= ALERT_RADIUS_M && !alertedRef.current) {
       alertedRef.current = true;
       playAlarm();
@@ -627,7 +676,53 @@ const TripMap = () => {
             </div>
           )}
 
-          <div ref={mapDivRef} className="h-[500px] w-full bg-muted" />
+          <div className="relative">
+            <div ref={mapDivRef} className={`h-[500px] w-full bg-muted ${online ? "" : "hidden"}`} />
+            {!online && (
+              <div className="h-[500px] w-full bg-muted/40 flex flex-col items-center justify-center gap-6 p-6 text-center">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <WifiOff className="w-5 h-5" />
+                  <span className="text-sm font-medium">Offline mode — GPS tracking still works</span>
+                </div>
+
+                {destination ? (
+                  <>
+                    <Compass
+                      className="w-24 h-24 text-primary transition-transform duration-500"
+                      style={{ transform: `rotate(${bearing ?? 0}deg)` }}
+                    />
+                    <div>
+                      <p className="text-4xl font-bold">
+                        {distance === null
+                          ? "—"
+                          : distance < 1000
+                          ? `${Math.round(distance)} m`
+                          : `${(distance / 1000).toFixed(2)} km`}
+                      </p>
+                      <p className="text-muted-foreground mt-1">
+                        to {destination.label.split(",")[0]}
+                      </p>
+                    </div>
+                    {distance !== null && distance <= ALERT_RADIUS_M && (
+                      <Badge className="bg-secondary text-secondary-foreground animate-pulse">
+                        Within 500 m — get ready!
+                      </Badge>
+                    )}
+                    {!tracking && (
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        Tap “Start tracking” to use your device GPS. No internet needed.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    No saved destination. Connect to the internet once to search a place — it’s stored on
+                    your device and the 500 m alarm keeps working offline afterwards.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
     </section>
