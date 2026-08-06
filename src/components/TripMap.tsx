@@ -22,6 +22,17 @@ const haversine = (a: LatLng, b: LatLng) => {
   return 2 * R * Math.asin(Math.sqrt(s));
 };
 
+const bearingBetween = (a: LatLng, b: LatLng) => {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const y = Math.sin(toRad(b.lng - a.lng)) * Math.cos(toRad(b.lat));
+  const x =
+    Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
+    Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(toRad(b.lng - a.lng));
+  return (Math.atan2(y, x) * 180) / Math.PI;
+};
+
+const STORAGE_KEY = "virtueyatra.tripmap.destination";
+
 const playAlarm = () => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
