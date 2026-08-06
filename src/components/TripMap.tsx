@@ -123,8 +123,33 @@ const TripMap = () => {
   const watchId = useRef<number | null>(null);
   const alertedRef = useRef(false);
 
-  // Init map
+  // Online/offline awareness
   useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => {
+      setOnline(false);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    };
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  // Persist destination so it survives reloads / offline use
+  useEffect(() => {
+    try {
+      if (destination) localStorage.setItem(STORAGE_KEY, JSON.stringify(destination));
+      else localStorage.removeItem(STORAGE_KEY);
+    } catch { /* ignore */ }
+  }, [destination]);
+
+  // Init map (needs network)
+  useEffect(() => {
+    if (!online || mapRef.current) return;
     let cancelled = false;
     loadGoogleMaps()
       .then(() => {
@@ -141,10 +166,9 @@ const TripMap = () => {
       })
       .catch((e) => {
         console.error(e);
-        toast({ title: "Map failed to load", description: e.message, variant: "destructive" });
       });
     return () => { cancelled = true; };
-  }, [toast]);
+  }, [toast, online]);
 
   // Update destination marker + circle
   useEffect(() => {
