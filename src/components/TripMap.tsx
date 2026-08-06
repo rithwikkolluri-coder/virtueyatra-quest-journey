@@ -429,6 +429,10 @@ const TripMap = () => {
   };
 
   const handleSearch = async () => {
+    if (!online) {
+      toast({ title: "You're offline", description: "Search needs internet — your saved destination still works.", variant: "destructive" });
+      return;
+    }
     if (!query.trim()) return;
     // If suggestions are available, pick the first one
     if (suggestions.length > 0) {
