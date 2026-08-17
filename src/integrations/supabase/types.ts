@@ -14,6 +14,221 @@ export type Database = {
   }
   public: {
     Tables: {
+      destination_places: {
+        Row: {
+          created_at: string
+          destination_id: string
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          note: string | null
+          stop_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          destination_id: string
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          note?: string | null
+          stop_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          destination_id?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          note?: string | null
+          stop_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "destination_places_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      destinations: {
+        Row: {
+          category: string
+          created_at: string
+          description_en: string | null
+          description_hi: string | null
+          description_te: string | null
+          id: string
+          is_active: boolean
+          latitude: number | null
+          location_en: string
+          location_hi: string | null
+          location_te: string | null
+          longitude: number | null
+          name_en: string
+          name_hi: string | null
+          name_te: string | null
+          slug: string
+          sort_order: number
+          tags: string[]
+          trending: boolean
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description_en?: string | null
+          description_hi?: string | null
+          description_te?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          location_en: string
+          location_hi?: string | null
+          location_te?: string | null
+          longitude?: number | null
+          name_en: string
+          name_hi?: string | null
+          name_te?: string | null
+          slug: string
+          sort_order?: number
+          tags?: string[]
+          trending?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description_en?: string | null
+          description_hi?: string | null
+          description_te?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          location_en?: string
+          location_hi?: string | null
+          location_te?: string | null
+          longitude?: number | null
+          name_en?: string
+          name_hi?: string | null
+          name_te?: string | null
+          slug?: string
+          sort_order?: number
+          tags?: string[]
+          trending?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      experiences: {
+        Row: {
+          category: string
+          created_at: string
+          description_en: string | null
+          description_hi: string | null
+          description_te: string | null
+          difficulty_en: string | null
+          difficulty_hi: string | null
+          difficulty_te: string | null
+          duration_en: string | null
+          duration_hi: string | null
+          duration_te: string | null
+          gradient: string
+          icon: string
+          id: string
+          is_active: boolean
+          slug: string
+          sort_order: number
+          title_en: string
+          title_hi: string | null
+          title_te: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description_en?: string | null
+          description_hi?: string | null
+          description_te?: string | null
+          difficulty_en?: string | null
+          difficulty_hi?: string | null
+          difficulty_te?: string | null
+          duration_en?: string | null
+          duration_hi?: string | null
+          duration_te?: string | null
+          gradient?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          slug: string
+          sort_order?: number
+          title_en: string
+          title_hi?: string | null
+          title_te?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description_en?: string | null
+          description_hi?: string | null
+          description_te?: string | null
+          difficulty_en?: string | null
+          difficulty_hi?: string | null
+          difficulty_te?: string | null
+          duration_en?: string | null
+          duration_hi?: string | null
+          duration_te?: string | null
+          gradient?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          slug?: string
+          sort_order?: number
+          title_en?: string
+          title_hi?: string | null
+          title_te?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_content: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value_en: string
+          value_hi: string | null
+          value_te: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value_en: string
+          value_hi?: string | null
+          value_te?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value_en?: string
+          value_hi?: string | null
+          value_te?: string | null
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           budget: string
