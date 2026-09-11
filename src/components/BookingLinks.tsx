@@ -1,9 +1,14 @@
 import { Bus, Plane, TrainFront, Hotel, Car } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+interface BookingLinksProps {
+  compact?: boolean;
+}
 
 const bookingOptions = [
   {
     icon: Bus,
-    label: "Bus Tickets",
+    labelKey: "booking.bus",
     href: "https://www.redbus.in",
     color: "from-red-500 to-orange-500",
     hoverBg: "hover:bg-red-500/10",
@@ -12,7 +17,7 @@ const bookingOptions = [
   },
   {
     icon: Plane,
-    label: "Flight Tickets",
+    labelKey: "booking.flights",
     href: "https://www.makemytrip.com/flights",
     color: "from-blue-500 to-cyan-500",
     hoverBg: "hover:bg-blue-500/10",
@@ -21,7 +26,7 @@ const bookingOptions = [
   },
   {
     icon: TrainFront,
-    label: "Train Tickets",
+    labelKey: "booking.trains",
     href: "https://www.irctc.co.in",
     color: "from-green-500 to-emerald-500",
     hoverBg: "hover:bg-green-500/10",
@@ -30,7 +35,7 @@ const bookingOptions = [
   },
   {
     icon: Hotel,
-    label: "Hotels",
+    labelKey: "booking.hotels",
     href: "https://www.oyorooms.com",
     color: "from-purple-500 to-violet-500",
     hoverBg: "hover:bg-purple-500/10",
@@ -39,7 +44,7 @@ const bookingOptions = [
   },
   {
     icon: Car,
-    label: "Cab / Taxi",
+    labelKey: "booking.cabs",
     href: "https://www.olacabs.com",
     color: "from-amber-500 to-yellow-500",
     hoverBg: "hover:bg-amber-500/10",
@@ -48,40 +53,59 @@ const bookingOptions = [
   },
 ];
 
-const BookingLinks = () => {
+const BookingLinks = ({ compact = false }: BookingLinksProps) => {
+  const { t } = useLanguage();
+
+  const bookingCards = (
+    <div className={compact ? "grid grid-cols-2 gap-3" : "flex flex-wrap justify-center gap-6"}>
+      {bookingOptions.map((option) => {
+        const Icon = option.icon;
+        return (
+          <a
+            key={option.labelKey}
+            href={option.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`group flex ${compact ? "min-h-28 flex-col items-center justify-center gap-2 p-3 text-center" : "w-36 flex-col items-center gap-3 p-6"} rounded-2xl border ${option.borderColor} ${option.hoverBg} bg-card/50 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}
+          >
+            <div className={`rounded-xl bg-gradient-to-br ${option.color} ${compact ? "p-3" : "p-4"} transition-transform duration-300 group-hover:scale-110`}>
+              <Icon className={`${compact ? "h-5 w-5" : "h-7 w-7"} text-white`} />
+            </div>
+            <span className={`text-sm font-semibold ${option.textColor}`}>
+              {t(option.labelKey)}
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <aside className="h-fit rounded-2xl border border-border/50 bg-card/70 p-5 shadow-xl backdrop-blur-sm lg:sticky lg:top-24">
+        <div className="mb-5">
+          <h3 className="text-xl font-bold">
+            {t("booking.title")} <span className="gradient-text">{t("booking.titleHighlight")}</span>
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">{t("booking.subtitle")}</p>
+        </div>
+        {bookingCards}
+      </aside>
+    );
+  }
+
   return (
     <section className="py-16 relative">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10 animate-slide-up">
           <h2 className="text-3xl md:text-4xl font-bold mb-3">
-            Book Your <span className="gradient-text">Travel</span>
+            {t("booking.title")} <span className="gradient-text">{t("booking.titleHighlight")}</span>
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Quick access to all your travel booking needs in one place.
+            {t("booking.subtitle")}
           </p>
         </div>
-
-        <div className="flex flex-wrap justify-center gap-6">
-          {bookingOptions.map((option) => {
-            const Icon = option.icon;
-            return (
-              <a
-                key={option.label}
-                href={option.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`group flex flex-col items-center gap-3 p-6 rounded-2xl border ${option.borderColor} ${option.hoverBg} bg-card/50 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-36`}
-              >
-                <div className={`p-4 rounded-xl bg-gradient-to-br ${option.color} group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon className="w-7 h-7 text-white" />
-                </div>
-                <span className={`text-sm font-semibold ${option.textColor}`}>
-                  {option.label}
-                </span>
-              </a>
-            );
-          })}
-        </div>
+        {bookingCards}
       </div>
     </section>
   );

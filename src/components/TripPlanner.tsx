@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import Itinerary from "@/components/Itinerary";
+import BookingLinks from "@/components/BookingLinks";
 
 interface TripSummary {
   destination: string;
@@ -284,8 +285,9 @@ const TripPlanner = () => {
           </div>
         )}
 
-        <div className="max-w-4xl mx-auto">
-          {showSummary && tripSummary ? (
+        <div className="mx-auto grid max-w-6xl items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="min-w-0">
+            {showSummary && tripSummary ? (
             /* Trip Summary Card */
             <>
               <Card className="p-8 border-border/50 shadow-2xl bg-card/80 backdrop-blur-sm animate-slide-up">
@@ -398,7 +400,7 @@ const TripPlanner = () => {
                 />
               )}
             </>
-          ) : (
+            ) : (
             /* Trip Form */
             <Card className="p-8 border-border/50 shadow-2xl bg-card/80 backdrop-blur-sm">
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -546,7 +548,9 @@ const TripPlanner = () => {
                 )}
               </form>
             </Card>
-          )}
+            )}
+          </div>
+          <BookingLinks compact />
         </div>
       </div>
     </section>
