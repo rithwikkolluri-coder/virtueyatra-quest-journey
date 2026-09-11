@@ -16,6 +16,16 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.plan': 'Plan Trip',
     'nav.signIn': 'Sign In',
     'nav.signOut': 'Sign Out',
+
+    // Booking Links
+    'booking.title': 'Book Your',
+    'booking.titleHighlight': 'Travel',
+    'booking.subtitle': 'Quick access to travel services for your trip.',
+    'booking.bus': 'Bus Tickets',
+    'booking.flights': 'Flight Tickets',
+    'booking.trains': 'Train Tickets',
+    'booking.hotels': 'Hotels',
+    'booking.cabs': 'Cab / Taxi',
     
     // Hero
     'hero.badge': 'Explore 1000+ Destinations',
@@ -272,6 +282,16 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.plan': 'यात्रा योजना',
     'nav.signIn': 'साइन इन',
     'nav.signOut': 'साइन आउट',
+
+    // Booking Links
+    'booking.title': 'अपनी',
+    'booking.titleHighlight': 'यात्रा बुक करें',
+    'booking.subtitle': 'अपनी यात्रा के लिए यात्रा सेवाओं तक तुरंत पहुंचें।',
+    'booking.bus': 'बस टिकट',
+    'booking.flights': 'फ्लाइट टिकट',
+    'booking.trains': 'ट्रेन टिकट',
+    'booking.hotels': 'होटल',
+    'booking.cabs': 'कैब / टैक्सी',
     
     // Hero
     'hero.badge': '1000+ गंतव्य खोजें',
@@ -528,6 +548,16 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.plan': 'ప్రయాణ ప్రణాళిక',
     'nav.signIn': 'సైన్ ఇన్',
     'nav.signOut': 'సైన్ అవుట్',
+
+    // Booking Links
+    'booking.title': 'మీ',
+    'booking.titleHighlight': 'ప్రయాణాన్ని బుక్ చేయండి',
+    'booking.subtitle': 'మీ ట్రిప్ కోసం ప్రయాణ సేవలకు త్వరిత ప్రాప్యత.',
+    'booking.bus': 'బస్ టికెట్లు',
+    'booking.flights': 'విమాన టికెట్లు',
+    'booking.trains': 'రైలు టికెట్లు',
+    'booking.hotels': 'హోటళ్లు',
+    'booking.cabs': 'క్యాబ్ / టాక్సీ',
     
     // Hero
     'hero.badge': '1000+ గమ్యస్థానాలు అన్వేషించండి',
