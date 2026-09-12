@@ -3,3 +3,4 @@
 - [x] Place booking actions beside the trip planner on larger screens.
 - [x] Stack booking actions below the planner on smaller screens.
 - [x] Verify planner, booking links, and responsive layouts.
+- [ ] Sync/publish project code to the GitHub repo https://github.com/Cyanexani/virtue-yatra.
