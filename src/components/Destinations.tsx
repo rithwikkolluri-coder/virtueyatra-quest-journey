@@ -5,6 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { MapPin, TrendingUp, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import himalayasImage from "@/assets/dest-himalayas.jpg";
+import coastImage from "@/assets/dest-coast.jpg";
+import heritageImage from "@/assets/dest-heritage.jpg";
+import wildlifeImage from "@/assets/dest-wildlife.jpg";
+import teaImage from "@/assets/dest-tea.jpg";
+import desertImage from "@/assets/dest-desert.jpg";
+import goaImage from "@/assets/dest-goa.jpg";
+import varanasiImage from "@/assets/dest-varanasi.jpg";
+import kazirangaImage from "@/assets/dest-kaziranga.jpg";
 
 const Destinations = () => {
   const [activeTab, setActiveTab] = useState("All");
@@ -35,6 +44,7 @@ const Destinations = () => {
       tags: ["tag.adventure", "tag.nature", "tag.trekking"],
       category: "Adventure",
       trending: true,
+      image: himalayasImage,
     },
     {
       nameKey: "dest.coastalParadise",
@@ -46,6 +56,7 @@ const Destinations = () => {
       tags: ["tag.beach", "tag.relaxation", "tag.waterSports"],
       category: "Beach",
       trending: false,
+      image: coastImage,
     },
     {
       nameKey: "dest.heritageWonders",
@@ -57,6 +68,7 @@ const Destinations = () => {
       tags: ["tag.culture", "tag.history", "tag.architecture"],
       category: "Culture",
       trending: true,
+      image: heritageImage,
     },
     {
       nameKey: "dest.wildlifeSafari",
@@ -68,6 +80,7 @@ const Destinations = () => {
       tags: ["tag.wildlife", "tag.photography", "tag.safari"],
       category: "Wildlife",
       trending: false,
+      image: wildlifeImage,
     },
     {
       nameKey: "dest.teaGardens",
@@ -79,6 +92,7 @@ const Destinations = () => {
       tags: ["tag.nature", "tag.peaceful", "tag.scenic"],
       category: "Nature",
       trending: false,
+      image: teaImage,
     },
     {
       nameKey: "dest.desertAdventure",
@@ -90,6 +104,7 @@ const Destinations = () => {
       tags: ["tag.adventure", "tag.culture", "tag.unique"],
       category: "Adventure",
       trending: true,
+      image: desertImage,
     },
     {
       nameKey: "dest.goaBeaches",
@@ -101,6 +116,7 @@ const Destinations = () => {
       tags: ["tag.beach", "tag.nightlife", "tag.food"],
       category: "Beach",
       trending: true,
+      image: goaImage,
     },
     {
       nameKey: "dest.varanasiGhats",
@@ -112,6 +128,7 @@ const Destinations = () => {
       tags: ["tag.culture", "tag.spiritual", "tag.heritage"],
       category: "Culture",
       trending: false,
+      image: varanasiImage,
     },
     {
       nameKey: "dest.kazirangaSafari",
@@ -123,6 +140,7 @@ const Destinations = () => {
       tags: ["tag.wildlife", "tag.nature", "tag.safari"],
       category: "Wildlife",
       trending: false,
+      image: kazirangaImage,
     },
   ];
 
@@ -265,11 +283,16 @@ const Destinations = () => {
                 animationDelay: `${index * 0.1}s`,
               }}
             >
-              {/* Image Placeholder with Gradient */}
-              <div className="relative h-56 bg-gradient-to-br from-primary via-travel-teal to-travel-ocean overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <MapPin className="w-20 h-20 text-white/30 group-hover:scale-125 transition-transform duration-500" />
-                </div>
+              {/* Destination Image */}
+              <div className="relative h-56 overflow-hidden bg-muted">
+                <img
+                  src={destination.image}
+                  alt={t(destination.nameKey)}
+                  loading="lazy"
+                  width={1024}
+                  height={640}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
                 
                 {/* Trending Badge */}
                 {destination.trending && (
@@ -280,7 +303,7 @@ const Destinations = () => {
                 )}
 
                 {/* Overlay Effect */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
 
               {/* Content */}
