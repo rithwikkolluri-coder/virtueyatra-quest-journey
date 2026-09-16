@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { MapPin, TrendingUp, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDestinations } from "@/hooks/useDestinations";
 import himalayasImage from "@/assets/dest-himalayas.jpg";
 import coastImage from "@/assets/dest-coast.jpg";
 import heritageImage from "@/assets/dest-heritage.jpg";
@@ -19,7 +20,8 @@ const Destinations = () => {
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [keyboardFlash, setKeyboardFlash] = useState(false);
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const { data: liveDestinations = [] } = useDestinations();
   const sectionRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,7 +35,7 @@ const Destinations = () => {
     { key: "Nature", label: t('tag.nature') },
   ];
 
-  const destinations = [
+  const fallbackDestinations = [
     {
       nameKey: "dest.himalayanTrails",
       locationKey: "dest.himalayanTrails.location",
@@ -144,6 +146,72 @@ const Destinations = () => {
     },
   ];
 
+  const destinationImages: Record<string, string> = {
+    "himalayan-trails": himalayasImage,
+    "coastal-paradise": coastImage,
+    "heritage-wonders": heritageImage,
+    "wildlife-safari": wildlifeImage,
+    "tea-gardens": teaImage,
+    "desert-adventure": desertImage,
+    "goa-beaches": goaImage,
+    "varanasi-ghats": varanasiImage,
+    "kaziranga-safari": kazirangaImage,
+  };
+
+  const tagTranslationKeys: Record<string, string> = {
+    Adventure: "tag.adventure",
+    Nature: "tag.nature",
+    Trekking: "tag.trekking",
+    Beach: "tag.beach",
+    Relaxation: "tag.relaxation",
+    "Water Sports": "tag.waterSports",
+    Culture: "tag.culture",
+    History: "tag.history",
+    Architecture: "tag.architecture",
+    Wildlife: "tag.wildlife",
+    Photography: "tag.photography",
+    Safari: "tag.safari",
+    Peaceful: "tag.peaceful",
+    Scenic: "tag.scenic",
+    Unique: "tag.unique",
+    Nightlife: "tag.nightlife",
+    Food: "tag.food",
+    Spiritual: "tag.spiritual",
+    Heritage: "tag.heritage",
+  };
+
+  const getLocalizedText = (english: string, hindi: string | null, telugu: string | null) => {
+    if (language === "hi") return hindi || english;
+    if (language === "te") return telugu || english;
+    return english;
+  };
+
+  const destinations = useMemo(() => {
+    if (liveDestinations.length > 0) {
+      return liveDestinations.map((destination) => ({
+        key: destination.id,
+        name: getLocalizedText(destination.name_en, destination.name_hi, destination.name_te),
+        location: getLocalizedText(destination.location_en, destination.location_hi, destination.location_te),
+        description: getLocalizedText(destination.description_en || "", destination.description_hi, destination.description_te),
+        tags: destination.tags.map((tag) => t(tagTranslationKeys[tag] || tag)),
+        category: destination.category,
+        trending: destination.trending,
+        image: destinationImages[destination.slug] || himalayasImage,
+      }));
+    }
+
+    return fallbackDestinations.map((destination) => ({
+      key: destination.nameKey,
+      name: t(destination.nameKey),
+      location: t(destination.locationKey),
+      description: t(destination.descKey),
+      tags: destination.tags.map((tagKey) => t(tagKey)),
+      category: destination.category,
+      trending: destination.trending,
+      image: destination.image,
+    }));
+  }, [fallbackDestinations, language, liveDestinations, t]);
+
   const filteredDestinations = useMemo(() => {
     let result = activeTab === "All" 
       ? destinations 
@@ -152,8 +220,8 @@ const Destinations = () => {
     if (searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
       result = result.filter(d => {
-        const name = t(d.nameKey).toLowerCase();
-        const location = t(d.locationKey).toLowerCase();
+        const name = d.name.toLowerCase();
+        const location = d.location.toLowerCase();
         // Match if name/location starts with the query, any word starts with it,
         // or it appears anywhere — so typing "H" surfaces Himalayan, Heritage, etc.
         const nameWords = name.split(/\s+/);
@@ -171,7 +239,7 @@ const Destinations = () => {
     
     
     return result;
-  }, [activeTab, searchQuery, t, destinations]);
+  }, [activeTab, searchQuery, destinations]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -277,7 +345,7 @@ const Destinations = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredDestinations.map((destination, index) => (
             <Card
-              key={destination.nameKey}
+              key={destination.key}
               className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl bg-card cursor-pointer animate-slide-up"
               style={{
                 animationDelay: `${index * 0.1}s`,
@@ -287,7 +355,7 @@ const Destinations = () => {
               <div className="relative h-56 overflow-hidden bg-muted">
                 <img
                   src={destination.image}
-                  alt={t(destination.nameKey)}
+                  alt={destination.name}
                   loading="lazy"
                   width={1024}
                   height={640}
@@ -311,28 +379,28 @@ const Destinations = () => {
                 {/* Location */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                   <MapPin className="w-4 h-4" />
-                  {t(destination.locationKey)}
+                  {destination.location}
                 </div>
 
                 {/* Title */}
                 <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
-                  {t(destination.nameKey)}
+                    {destination.name}
                 </h3>
 
                 {/* Description */}
                 <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                  {t(destination.descKey)}
+                  {destination.description}
                 </p>
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {destination.tags.map((tagKey) => (
+                  {destination.tags.map((tag) => (
                     <Badge
-                      key={tagKey}
+                      key={tag}
                       variant="secondary"
                       className="bg-primary/10 text-primary hover:bg-primary/20"
                     >
-                      {t(tagKey)}
+                      {tag}
                     </Badge>
                   ))}
                 </div>
