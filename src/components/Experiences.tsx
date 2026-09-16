@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Camera, Utensils, Tent, Waves, Mountain, Users, Bike, Music } from "lucide-react";
+import { Camera, Utensils, Tent, Waves, Mountain, Users, Bike, Music, Sparkles, type LucideIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useExperiences } from "@/hooks/useExperiences";
 
 const Experiences = () => {
   const [activeTab, setActiveTab] = useState("All");
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const { data: liveExperiences = [] } = useExperiences();
 
   const tabs = [
     { key: "All", label: t('experiences.all') },
@@ -19,7 +21,7 @@ const Experiences = () => {
     { key: "Nature", label: t('tag.nature') },
   ];
 
-  const experiences = [
+  const fallbackExperiences = [
     {
       icon: Mountain,
       titleKey: "exp.trekkingAdventures",
@@ -102,14 +104,58 @@ const Experiences = () => {
     },
   ];
 
+  const iconByName: Record<string, LucideIcon> = {
+    Camera,
+    Utensils,
+    Tent,
+    Waves,
+    Mountain,
+    Users,
+    Bike,
+    Music,
+    Sparkles,
+  };
+
+  const getLocalizedText = (english: string, hindi: string | null, telugu: string | null) => {
+    if (language === "hi") return hindi || english;
+    if (language === "te") return telugu || english;
+    return english;
+  };
+
+  const experiences = useMemo(() => {
+    if (liveExperiences.length > 0) {
+      return liveExperiences.map((experience) => ({
+        key: experience.id,
+        icon: iconByName[experience.icon] || Sparkles,
+        title: getLocalizedText(experience.title_en, experience.title_hi, experience.title_te),
+        description: getLocalizedText(experience.description_en || "", experience.description_hi, experience.description_te),
+        duration: getLocalizedText(experience.duration_en || "", experience.duration_hi, experience.duration_te),
+        difficulty: getLocalizedText(experience.difficulty_en || "", experience.difficulty_hi, experience.difficulty_te),
+        gradient: experience.gradient,
+        category: experience.category,
+      }));
+    }
+
+    return fallbackExperiences.map((experience) => ({
+      key: experience.titleKey,
+      icon: experience.icon,
+      title: t(experience.titleKey),
+      description: t(experience.descKey),
+      duration: t(experience.durationKey),
+      difficulty: t(experience.difficultyKey),
+      gradient: experience.gradient,
+      category: experience.category,
+    }));
+  }, [fallbackExperiences, language, liveExperiences, t]);
+
   const filteredExperiences = activeTab === "All"
     ? experiences
     : experiences.filter(e => e.category === activeTab);
 
-  const handleBookExperience = (titleKey: string) => {
+  const handleBookExperience = (title: string) => {
     toast({
       title: `${t('experiences.selected')} 🎉`,
-      description: `${t(titleKey)} ${t('experiences.addedMessage')}`,
+      description: `${title} ${t('experiences.addedMessage')}`,
     });
     const planSection = document.getElementById('plan');
     planSection?.scrollIntoView({ behavior: 'smooth' });
@@ -156,7 +202,7 @@ const Experiences = () => {
             const Icon = experience.icon;
             return (
               <Card
-                key={experience.titleKey}
+                key={experience.key}
                 className="group p-6 border-border/50 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 bg-card/80 backdrop-blur-sm relative overflow-hidden animate-slide-up"
                 style={{
                   animationDelay: `${index * 0.1}s`,
@@ -173,25 +219,25 @@ const Experiences = () => {
 
                   {/* Content */}
                   <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
-                    {t(experience.titleKey)}
+                    {experience.title}
                   </h3>
                   <p className="text-muted-foreground text-sm mb-4 leading-relaxed line-clamp-2">
-                    {t(experience.descKey)}
+                    {experience.description}
                   </p>
 
                   {/* Details */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     <Badge variant="secondary" className="bg-muted text-foreground text-xs">
-                      {t(experience.durationKey)}
+                      {experience.duration}
                     </Badge>
                     <Badge variant="secondary" className="bg-muted text-foreground text-xs">
-                      {t(experience.difficultyKey)}
+                      {experience.difficulty}
                     </Badge>
                   </div>
 
                   {/* CTA */}
                   <Button
-                    onClick={() => handleBookExperience(experience.titleKey)}
+                    onClick={() => handleBookExperience(experience.title)}
                     className="w-full bg-gradient-to-r from-primary to-travel-ocean hover:scale-105 transition-all"
                   >
                     {t('experiences.bookNow')}
