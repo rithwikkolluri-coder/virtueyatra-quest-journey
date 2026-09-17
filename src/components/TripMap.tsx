@@ -79,6 +79,44 @@ const loadGoogleMaps = (): Promise<void> => {
 
 interface Suggestion { id: string; primary: string; secondary: string; prediction: any; }
 
+interface CachedPlace {
+  name: string;
+  note?: string | null;
+  lat: number;
+  lng: number;
+  stopOrder: number;
+}
+
+const PLACES_CACHE_KEY = "virtueyatra.tripmap.places";
+
+const readCachedPlaces = (destination: LatLng & { label: string }): CachedPlace[] => {
+  try {
+    const raw = localStorage.getItem(PLACES_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) as Record<string, CachedPlace[]> : {};
+    const destinationTerm = destination.label.split(",")[0].trim().toLowerCase();
+    const matches = Object.entries(cache)
+      .filter(([key, places]) => {
+        if (key.includes(destinationTerm) || destinationTerm.includes(key)) return true;
+        return places.some((place) => haversine(destination, { lat: place.lat, lng: place.lng }) <= 60000);
+      })
+      .flatMap(([, places]) => places);
+    return matches.filter((place, index, all) => all.findIndex((item) => item.name === place.name) === index);
+  } catch {
+    return [];
+  }
+};
+
+const writeCachedPlaces = (destination: LatLng & { label: string }, places: CachedPlace[]) => {
+  try {
+    const raw = localStorage.getItem(PLACES_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) as Record<string, CachedPlace[]> : {};
+    cache[destination.label.toLowerCase()] = places;
+    localStorage.setItem(PLACES_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Offline mode remains useful even if browser storage is unavailable.
+  }
+};
+
 const TripMap = () => {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
@@ -102,6 +140,7 @@ const TripMap = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeTimeMin, setRouteTimeMin] = useState<number | null>(null);
+  const [offlineStops, setOfflineStops] = useState<CachedPlace[]>([]);
   const [placeDetails, setPlaceDetails] = useState<{
     address?: string;
     phone?: string;
@@ -206,12 +245,13 @@ const TripMap = () => {
     mapRef.current.setZoom(14);
   }, [destination, mapReady]);
 
-  // Load nearby itinerary places (top attractions) for the selected destination
+  // Load saved itinerary places first, then fetch them online when needed.
   useEffect(() => {
-    if (!mapReady || !mapRef.current) return;
-    const g = (window as any).google;
+    if (!destination) {
+      setOfflineStops([]);
+      return;
+    }
 
-    // Clear previous attraction markers and route polyline
     attractionMarkersRef.current.forEach((m) => m.setMap(null));
     attractionMarkersRef.current = [];
     routePolylineRef.current?.setMap(null);
@@ -219,12 +259,94 @@ const TripMap = () => {
     setRouteDistance(null);
     setRouteTimeMin(null);
     attractionInfoRef.current?.close?.();
+    const cached = readCachedPlaces(destination);
+    setOfflineStops(cached);
 
-    if (!destination) return;
+    if (!mapReady || !mapRef.current) return;
+    const g = (window as any).google;
+
+    const renderPlaces = (places: CachedPlace[]) => {
+      if (!places.length) return;
+      setOfflineStops(places);
+      const info = new g.maps.InfoWindow();
+      attractionInfoRef.current = info;
+      const bounds = new g.maps.LatLngBounds();
+      bounds.extend({ lat: destination.lat, lng: destination.lng });
+      places.forEach((place, i) => {
+        const pos = { lat: place.lat, lng: place.lng };
+        const marker = new g.maps.Marker({
+          map: mapRef.current,
+          position: pos,
+          title: place.name,
+          label: { text: String(i + 1), color: "#ffffff", fontSize: "12px", fontWeight: "600" },
+          icon: {
+            path: g.maps.SymbolPath.CIRCLE,
+            scale: 12,
+            fillColor: "#0ea5e9",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2,
+          },
+        });
+        marker.addListener("click", () => {
+          info.setContent(`<div style="font-size:13px;max-width:220px"><strong>${place.name}</strong><br/><span style="color:#666">${place.note ?? "Saved itinerary stop"}</span></div>`);
+          info.open({ map: mapRef.current, anchor: marker });
+        });
+        attractionMarkersRef.current.push(marker);
+        bounds.extend(pos);
+      });
+      mapRef.current.fitBounds(bounds, 60);
+      const path = [{ lat: destination.lat, lng: destination.lng }, ...places.map((place) => ({ lat: place.lat, lng: place.lng }))];
+      routePolylineRef.current = new g.maps.Polyline({
+        path,
+        geodesic: true,
+        strokeColor: "#0ea5e9",
+        strokeOpacity: 0.7,
+        strokeWeight: 3,
+        icons: [{ icon: { path: g.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: "#0ea5e9", fillColor: "#0ea5e9", fillOpacity: 1 }, offset: "100%", repeat: "60px" }],
+      });
+      routePolylineRef.current.setMap(mapRef.current);
+      let totalM = 0;
+      for (let i = 1; i < path.length; i++) totalM += haversine(path[i - 1], path[i]);
+      const roadDistanceM = totalM * 1.3;
+      setRouteDistance(roadDistanceM);
+      setRouteTimeMin((roadDistanceM / 1000 / 35) * 60);
+    };
+
+    if (cached.length) {
+      renderPlaces(cached);
+      return;
+    }
+    if (!online) return;
 
     let cancelled = false;
     (async () => {
       try {
+        const { data } = await supabase
+          .from("destination_places")
+          .select("name,note,latitude,longitude,stop_order,destination_id,destinations!inner(name_en,location_en)")
+          .order("stop_order", { ascending: true });
+        const destinationTerm = destination.label.split(",")[0].trim().toLowerCase();
+        const rows = (data ?? []) as Array<{
+          name: string;
+          note: string | null;
+          latitude: number;
+          longitude: number;
+          stop_order: number;
+          destinations?: { name_en?: string; location_en?: string };
+        }>;
+        const curated = rows
+          .filter((row) => {
+            const names = [row.destinations?.name_en, row.destinations?.location_en].filter(Boolean).map((value) => value!.toLowerCase());
+            return names.some((name) => name.includes(destinationTerm) || destinationTerm.includes(name)) || haversine(destination, { lat: row.latitude, lng: row.longitude }) <= 60000;
+          })
+          .map((row) => ({ name: row.name, note: row.note, lat: row.latitude, lng: row.longitude, stopOrder: row.stop_order }));
+        if (curated.length) {
+          writeCachedPlaces(destination, curated);
+          if (!cancelled) renderPlaces(curated);
+          return;
+        }
+
         const { Place } = await g.maps.importLibrary("places");
         const { results } = await Place.searchByText({
           textQuery: `top tourist attractions in ${destination.label.split(",")[0]}`,
@@ -238,82 +360,20 @@ const TripMap = () => {
         });
         if (cancelled || !results?.length) return;
 
-        const info = new g.maps.InfoWindow();
-        attractionInfoRef.current = info;
-        const bounds = new g.maps.LatLngBounds();
-        bounds.extend({ lat: destination.lat, lng: destination.lng });
-
-        results.forEach((p: any, i: number) => {
+        const fetchedPlaces: CachedPlace[] = results.flatMap((p: any, i: number) => {
           if (!p.location) return;
           const pos = { lat: p.location.lat(), lng: p.location.lng() };
-          const marker = new g.maps.Marker({
-            map: mapRef.current,
-            position: pos,
-            title: p.displayName,
-            label: { text: String(i + 1), color: "#ffffff", fontSize: "12px", fontWeight: "600" },
-            icon: {
-              path: g.maps.SymbolPath.CIRCLE,
-              scale: 12,
-              fillColor: "#0ea5e9",
-              fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 2,
-            },
-          });
-          marker.addListener("click", () => {
-            info.setContent(
-              `<div style="font-size:13px;max-width:220px">
-                 <strong>${p.displayName ?? ""}</strong><br/>
-                 <span style="color:#666">${p.formattedAddress ?? ""}</span>
-               </div>`
-            );
-            info.open({ map: mapRef.current, anchor: marker });
-          });
-          attractionMarkersRef.current.push(marker);
-          bounds.extend(pos);
+           return { name: p.displayName ?? `Stop ${i + 1}`, note: p.formattedAddress, lat: pos.lat, lng: pos.lng, stopOrder: i };
         });
-
-        mapRef.current.fitBounds(bounds, 60);
-
-        // Draw a route polyline connecting destination → attractions in order
-        const path = [
-          { lat: destination.lat, lng: destination.lng },
-          ...attractionMarkersRef.current.map((m) => m.getPosition().toJSON()),
-        ];
-        routePolylineRef.current = new g.maps.Polyline({
-          path,
-          geodesic: true,
-          strokeColor: "#0ea5e9",
-          strokeOpacity: 0.7,
-          strokeWeight: 3,
-          icons: [
-            {
-              icon: { path: g.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: "#0ea5e9", fillColor: "#0ea5e9", fillOpacity: 1 },
-              offset: "100%",
-              repeat: "60px",
-            },
-          ],
-        });
-        routePolylineRef.current.setMap(mapRef.current);
-
-        // Compute total straight-line distance and estimate road distance + time
-        const allPoints = path;
-        let totalM = 0;
-        for (let i = 1; i < allPoints.length; i++) {
-          totalM += haversine(allPoints[i - 1], allPoints[i]);
-        }
-        const roadDistanceM = totalM * 1.3; // rough road-distance multiplier
-        const avgSpeedKmh = 35; // tourist driving in India (mixed roads)
-        const timeMin = (roadDistanceM / 1000 / avgSpeedKmh) * 60;
-        setRouteDistance(roadDistanceM);
-        setRouteTimeMin(timeMin);
+        writeCachedPlaces(destination, fetchedPlaces);
+        if (!cancelled) renderPlaces(fetchedPlaces);
       } catch (e) {
         console.error("nearby attractions error", e);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [destination, mapReady]);
+  }, [destination, mapReady, online]);
 
 
   // Update user marker
@@ -430,7 +490,17 @@ const TripMap = () => {
 
   const handleSearch = async () => {
     if (!online) {
-      toast({ title: "You're offline", description: "Search needs internet — your saved destination still works.", variant: "destructive" });
+      const term = query.trim().toLowerCase();
+      const cached = destination ? readCachedPlaces(destination) : [];
+      const match = cached.find((place) => place.name.toLowerCase().includes(term));
+      if (match) {
+        setDestination({ lat: match.lat, lng: match.lng, label: match.name });
+        setPlaceDetails({ address: match.note || match.name });
+        alertedRef.current = false;
+        toast({ title: "Saved place selected", description: match.name });
+        return;
+      }
+      toast({ title: "Offline search", description: "Try a place already saved on this device, or reconnect to search new locations." });
       return;
     }
     if (!query.trim()) return;
@@ -678,7 +748,7 @@ const TripMap = () => {
 
           <div className="relative">
             <div ref={mapDivRef} className={`h-[500px] w-full bg-muted ${online ? "" : "hidden"}`} />
-            {!online && (
+             {!online && (
               <div className="h-[500px] w-full bg-muted/40 flex flex-col items-center justify-center gap-6 p-6 text-center">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <WifiOff className="w-5 h-5" />
@@ -713,6 +783,19 @@ const TripMap = () => {
                         Tap “Start tracking” to use your device GPS. No internet needed.
                       </p>
                     )}
+                     {offlineStops.length > 0 && (
+                       <div className="w-full max-w-sm text-left">
+                         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Saved itinerary stops</p>
+                         <div className="space-y-1">
+                           {offlineStops.slice(0, 5).map((stop, index) => (
+                             <div key={`${stop.name}-${index}`} className="flex items-center gap-2 text-sm">
+                               <Badge variant="outline" className="h-5 min-w-5 justify-center px-1">{index + 1}</Badge>
+                               <span className="truncate">{stop.name}</span>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground max-w-sm">
