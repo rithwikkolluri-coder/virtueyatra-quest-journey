@@ -20,6 +20,59 @@ interface SpeechRecognitionWindow extends Window {
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/travel-chat`;
+const HISTORY_KEY = "virtueyatra.chat.history";
+const ANSWER_CACHE_KEY = "virtueyatra.chat.answers";
+
+const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+
+// Offline travel tips — works with zero internet
+const OFFLINE_TIPS: { keys: string[]; answer: string }[] = [
+  {
+    keys: ["goa", "beach", "beaches"],
+    answer: `**Goa, offline cheat-sheet** 🏖️\n\n1. **North Goa** — Baga, Calangute, Anjuna (lively, markets, nightlife).\n2. **South Goa** — Palolem, Agonda, Colva (quiet, cleaner, great for families).\n3. **Must-see** — Basilica of Bom Jesus, Fort Aguada, Dudhsagar Falls.\n4. **Best time** — November to February.\n5. **Pro tip** — Rent a scooter (~₹400/day) and always carry your licence.`,
+  },
+  {
+    keys: ["manali", "himachal", "snow", "mountain", "himalaya"],
+    answer: `**Manali on a budget** 🏔️\n\n1. **Getting there** — Overnight Volvo bus from Delhi (~₹1,200–1,800).\n2. **Stay** — Old Manali hostels ₹500–900/night.\n3. **Do** — Solang Valley, Hadimba Temple, Jogini Falls trek, Kasol day trip.\n4. **Rohtang/Atal Tunnel** — needs a permit for Rohtang; the tunnel side is free.\n5. **Pack** — Layers + gloves; nights are cold even in summer.`,
+  },
+  {
+    keys: ["budget", "cheap", "money", "cost", "save"],
+    answer: `**Budget travel rules of thumb (India)** 💸\n\n1. **Stay** — Hostels ₹500–1,000, budget hotels ₹1,200–2,000.\n2. **Food** — Local thali ₹100–250 beats restaurants every time.\n3. **Transport** — Sleeper trains and state buses are cheapest; book 30+ days ahead.\n4. **Daily budget** — ₹1,500–2,500/day covers most backpacking trips.\n5. **Pro tip** — Travel midweek; weekend prices jump 30–50%.`,
+  },
+  {
+    keys: ["pack", "packing", "luggage", "bag", "carry"],
+    answer: `**Packing checklist** 🎒\n\n1. ID proof + printed/offline copies of tickets.\n2. Power bank, charger, universal adapter.\n3. Medicines, ORS, basic first-aid.\n4. Layered clothing + rain jacket in monsoon.\n5. Refillable bottle, sunscreen, sunglasses.\n6. Some cash — UPI fails in remote hill and desert areas.`,
+  },
+  {
+    keys: ["book", "booking", "ticket", "train", "bus", "flight", "hotel", "cab"],
+    answer: `**How to book (do this once you're online)** 🎟️\n\n1. **Trains** — IRCTC; open Tatkal at 10am (AC) / 11am (sleeper).\n2. **Buses** — RedBus or the state transport site; pick front seats for less bumps.\n3. **Flights** — Book 3–6 weeks out, Tuesday/Wednesday departures are cheapest.\n4. **Hotels** — Compare MakeMyTrip/Booking, then call the hotel to match the price.\n5. **Cabs** — Ola/Uber in cities; prepaid taxis at airports and stations.`,
+  },
+  {
+    keys: ["best time", "season", "weather", "monsoon", "when to visit"],
+    answer: `**When to travel in India** 🗓️\n\n1. **Oct–Mar** — Best overall for most of India.\n2. **Apr–Jun** — Hills (Manali, Ladakh, Sikkim) shine; plains are very hot.\n3. **Jul–Sep** — Monsoon magic in Kerala, Meghalaya, Western Ghats.\n4. **Pro tip** — Ladakh roads usually open late May to early October.`,
+  },
+  {
+    keys: ["safe", "safety", "solo", "woman", "women"],
+    answer: `**Staying safe on the road** 🛡️\n\n1. Share your live location with a friend daily.\n2. Reach new towns before dark; avoid empty night roads.\n3. Use registered taxis/app cabs; note the number plate.\n4. Keep a cash reserve separate from your wallet.\n5. Emergency numbers: **112** (all), **1363** (tourist helpline).`,
+  },
+  {
+    keys: ["food", "eat", "restaurant", "cuisine"],
+    answer: `**Eating well and safely** 🍛\n\n1. Choose busy stalls — high turnover means fresh food.\n2. Stick to bottled/filtered water and skip raw salads at street stalls.\n3. Try the local speciality: Goan fish curry, Rajasthani dal baati, Kerala sadya.\n4. Thalis give the best value for money at lunch.`,
+  },
+];
+
+const offlineAnswer = (question: string, cache: Record<string, string>): string => {
+  const q = normalize(question);
+  // Exact/close match from previously received online answers
+  if (cache[q]) return `📴 *Offline — saved answer from earlier:*\n\n${cache[q]}`;
+  const cachedKey = Object.keys(cache).find((k) => k.includes(q) || q.includes(k));
+  if (cachedKey && q.length > 8) return `📴 *Offline — saved answer from earlier:*\n\n${cache[cachedKey]}`;
+
+  const hit = OFFLINE_TIPS.find((t) => t.keys.some((k) => q.includes(k)));
+  if (hit) return `📴 *Offline mode — here's what I know by heart:*\n\n${hit.answer}`;
+
+  return `📴 *You're offline right now*, so I'm answering from my saved travel notes.\n\nI can still help with: **Goa**, **Manali & the hills**, **budget planning**, **packing**, **booking steps**, **best time to travel**, **safety** and **food**. Ask about any of those!\n\nOnce you're back online I'll be my full chatty self again. 🌍`;
+};
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
