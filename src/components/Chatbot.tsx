@@ -78,14 +78,41 @@ const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hey there, travel buddy! 🌍✈️ I'm **Yatra Buddy** — your personal travel friend. Ask me anything about destinations, bookings, budgets, or hidden gems across India. Let's plan something awesome! 🎉" }
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      const saved = raw ? (JSON.parse(raw) as Message[]) : null;
+      if (saved?.length) return saved;
+    } catch { /* ignore */ }
+    return [
+      { role: "assistant", content: "Hey there, travel buddy! 🌍✈️ I'm **Yatra Buddy** — your personal travel friend. Ask me anything about destinations, bookings, budgets, or hidden gems across India. I also work offline with saved travel notes. Let's plan something awesome! 🎉" },
+    ];
+  });
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Track connectivity
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  // Keep the conversation available offline / after reloads
+  useEffect(() => {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-40)));
+    } catch { /* ignore */ }
+  }, [messages]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
