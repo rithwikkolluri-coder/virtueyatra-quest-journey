@@ -175,12 +175,29 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
 
+  const readAnswerCache = (): Record<string, string> => {
+    try {
+      const raw = localStorage.getItem(ANSWER_CACHE_KEY);
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  };
+
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    const userMsg: Message = { role: "user", content: inputValue };
+    const question = inputValue;
+    const userMsg: Message = { role: "user", content: question };
     setMessages(prev => [...prev, userMsg]);
     setInputValue("");
+
+    // Offline: answer locally from saved notes + cached replies
+    if (!online) {
+      setMessages(prev => [...prev, { role: "assistant", content: offlineAnswer(question, readAnswerCache()) }]);
+      return;
+    }
+
     setIsLoading(true);
 
     let assistantSoFar = "";
