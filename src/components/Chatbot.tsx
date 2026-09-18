@@ -285,12 +285,27 @@ const Chatbot = () => {
       }
     } catch (e) {
       console.error("Chat error:", e);
-      toast({
-        title: "Oops!",
-        description: e instanceof Error ? e.message : "Something went wrong. Try again!",
-        variant: "destructive",
-      });
+      const isNetwork = e instanceof TypeError || !navigator.onLine;
+      if (isNetwork) {
+        setMessages(prev => [...prev, { role: "assistant", content: offlineAnswer(question, readAnswerCache()) }]);
+      } else {
+        toast({
+          title: "Oops!",
+          description: e instanceof Error ? e.message : "Something went wrong. Try again!",
+          variant: "destructive",
+        });
+      }
     } finally {
+      // Save the answer so it can be replayed offline later
+      if (assistantSoFar.trim()) {
+        try {
+          const cache = readAnswerCache();
+          cache[normalize(question)] = assistantSoFar;
+          const keys = Object.keys(cache);
+          if (keys.length > 40) keys.slice(0, keys.length - 40).forEach((k) => delete cache[k]);
+          localStorage.setItem(ANSWER_CACHE_KEY, JSON.stringify(cache));
+        } catch { /* ignore */ }
+      }
       setIsLoading(false);
     }
   };
