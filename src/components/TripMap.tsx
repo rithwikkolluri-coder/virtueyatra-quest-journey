@@ -273,6 +273,20 @@ const TripMap = () => {
         });
         if (cancelled || !results?.length) return;
 
+        // Save stops for offline use
+        const offlineStops: Stop[] = results
+          .filter((p: any) => p.location)
+          .map((p: any) => ({
+            name: String(p.displayName ?? ""),
+            address: p.formattedAddress ?? undefined,
+            lat: p.location.lat(),
+            lng: p.location.lng(),
+          }));
+        setStops(offlineStops);
+        const cache = readJson<Record<string, Stop[]>>(STOPS_KEY, {});
+        cache[destKey(destination)] = offlineStops;
+        writeJson(STOPS_KEY, cache);
+
         const info = new g.maps.InfoWindow();
         attractionInfoRef.current = info;
         const bounds = new g.maps.LatLngBounds();
