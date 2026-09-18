@@ -479,7 +479,19 @@ const TripMap = () => {
 
   const handleSearch = async () => {
     if (!online) {
-      toast({ title: "You're offline", description: "Search needs internet — your saved destination still works.", variant: "destructive" });
+      const q = query.trim().toLowerCase();
+      const hit = q ? recents.find((r) => r.label.toLowerCase().includes(q)) : null;
+      if (hit) {
+        setDestination(hit);
+        setQuery("");
+        toast({ title: "Offline match", description: `Switched to your saved place: ${hit.label.split(",")[0]}` });
+      } else {
+        toast({
+          title: "You're offline",
+          description: "Only your saved places can be opened right now.",
+          variant: "destructive",
+        });
+      }
       return;
     }
     if (!query.trim()) return;
