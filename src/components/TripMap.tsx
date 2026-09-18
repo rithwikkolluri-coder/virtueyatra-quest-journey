@@ -170,6 +170,18 @@ const TripMap = () => {
     } catch { /* ignore */ }
   }, [destination]);
 
+  // Keep a small offline library of recent destinations + their saved stops
+  useEffect(() => {
+    if (!destination) return;
+    setRecents((prev) => {
+      const next = [destination, ...prev.filter((r) => destKey(r) !== destKey(destination))].slice(0, 8);
+      writeJson(RECENTS_KEY, next);
+      return next;
+    });
+    const cache = readJson<Record<string, Stop[]>>(STOPS_KEY, {});
+    setStops(cache[destKey(destination)] ?? []);
+  }, [destination]);
+
   // Init map (needs network)
   useEffect(() => {
     if (!online || mapRef.current) return;
