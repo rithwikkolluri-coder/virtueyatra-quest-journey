@@ -728,7 +728,7 @@ const TripMap = () => {
           <div className="relative">
             <div ref={mapDivRef} className={`h-[500px] w-full bg-muted ${online ? "" : "hidden"}`} />
             {!online && (
-              <div className="h-[500px] w-full bg-muted/40 flex flex-col items-center justify-center gap-6 p-6 text-center">
+              <div className="h-[500px] w-full bg-muted/40 overflow-y-auto flex flex-col items-center gap-5 p-6 text-center">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <WifiOff className="w-5 h-5" />
                   <span className="text-sm font-medium">Offline mode — GPS tracking still works</span>
@@ -737,7 +737,7 @@ const TripMap = () => {
                 {destination ? (
                   <>
                     <Compass
-                      className="w-24 h-24 text-primary transition-transform duration-500"
+                      className="w-20 h-20 text-primary transition-transform duration-500"
                       style={{ transform: `rotate(${bearing ?? 0}deg)` }}
                     />
                     <div>
@@ -766,8 +766,60 @@ const TripMap = () => {
                 ) : (
                   <p className="text-sm text-muted-foreground max-w-sm">
                     No saved destination. Connect to the internet once to search a place — it’s stored on
-                    your device and the 500 m alarm keeps working offline afterwards.
+                    your device and works offline afterwards.
                   </p>
+                )}
+
+                {stops.length > 0 && (
+                  <div className="w-full max-w-md text-left">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      Saved stops nearby
+                    </p>
+                    <ul className="space-y-2">
+                      {stops.map((s, i) => {
+                        const from = userPos ?? destination;
+                        const d = from ? haversine(from, s) : null;
+                        return (
+                          <li key={`${s.name}-${i}`} className="bg-card border border-border rounded-lg px-3 py-2">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{i + 1}. {s.name}</p>
+                                {s.address && (
+                                  <p className="text-xs text-muted-foreground truncate">{s.address}</p>
+                                )}
+                              </div>
+                              {d !== null && (
+                                <span className="text-xs text-muted-foreground shrink-0">
+                                  {d < 1000 ? `${Math.round(d)} m` : `${(d / 1000).toFixed(1)} km`}
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
+                {recents.length > 0 && (
+                  <div className="w-full max-w-md text-left">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      Saved places (work offline)
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {recents.map((r) => (
+                        <Button
+                          key={destKey(r)}
+                          size="sm"
+                          variant={destination && destKey(r) === destKey(destination) ? "default" : "outline"}
+                          onClick={() => setDestination(r)}
+                        >
+                          <MapPin className="w-3 h-3 mr-1" />
+                          {r.label.split(",")[0]}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
