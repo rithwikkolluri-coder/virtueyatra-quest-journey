@@ -121,6 +121,10 @@ const TripMap = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeTimeMin, setRouteTimeMin] = useState<number | null>(null);
+  const [stops, setStops] = useState<Stop[]>([]);
+  const [recents, setRecents] = useState<(LatLng & { label: string })[]>(() =>
+    readJson<(LatLng & { label: string })[]>(RECENTS_KEY, [])
+  );
   const [placeDetails, setPlaceDetails] = useState<{
     address?: string;
     phone?: string;
