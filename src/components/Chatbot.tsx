@@ -339,7 +339,9 @@ const Chatbot = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-white">Yatra Buddy 🧳</h3>
-                <p className="text-xs text-white/80">Your AI travel friend</p>
+                <p className="text-xs text-white/80 flex items-center gap-1">
+                  {online ? "Your AI travel friend" : (<><WifiOff className="w-3 h-3" /> Offline mode — saved tips</>)}
+                </p>
               </div>
             </div>
             <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-white hover:bg-white/20">
