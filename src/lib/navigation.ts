@@ -19,7 +19,29 @@ export const haversine = (a: LatLng, b: LatLng): number => {
     Math.cos(toRadians(a.lat)) *
       Math.cos(toRadians(b.lat)) *
       Math.sin(longitudeDelta / 2) ** 2;
-  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(value));
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(Math.min(1, value)));
+};
+
+export const bearingBetween = (a: LatLng, b: LatLng) => {
+  const rad = (n: number) => n * Math.PI / 180;
+  const delta = rad(b.lng - a.lng);
+  const y = Math.sin(delta) * Math.cos(rad(b.lat));
+  const x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(delta);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+};
+
+export type TravelMode = "DRIVE" | "WALK" | "TRANSIT";
+export const TURN_ALERT_METERS = 100;
+export const ARRIVAL_ALERT_METERS = 500;
+
+export const shouldReroute = (distance: number, accuracy: number, consecutive: number) =>
+  accuracy <= 35 && distance - accuracy > 50 && consecutive >= 3;
+
+export const googleMapsDirections = (destination: LatLng, mode: TravelMode, origin?: LatLng | null) => {
+  const link = new URL("https://www.google.com/maps/dir/");
+  link.search = new URLSearchParams({ api: "1", destination: `${destination.lat},${destination.lng}`, travelmode: { DRIVE: "driving", WALK: "walking", TRANSIT: "transit" }[mode], dir_action: "navigate" }).toString();
+  if (origin) link.searchParams.set("origin", `${origin.lat},${origin.lng}`);
+  return link.toString();
 };
 
 export const decodePolyline = (encoded: string): LatLng[] => {
@@ -35,6 +57,7 @@ export const decodePolyline = (encoded: string): LatLng[] => {
     do {
       if (index >= encoded.length) return [];
       byte = encoded.charCodeAt(index++) - 63;
+      if (byte < 0 || byte > 63 || shift > 25) return [];
       result |= (byte & 0x1f) << shift;
       shift += 5;
     } while (byte >= 0x20);
@@ -45,11 +68,13 @@ export const decodePolyline = (encoded: string): LatLng[] => {
     do {
       if (index >= encoded.length) return [];
       byte = encoded.charCodeAt(index++) - 63;
+      if (byte < 0 || byte > 63 || shift > 25) return [];
       result |= (byte & 0x1f) << shift;
       shift += 5;
     } while (byte >= 0x20);
     longitude += result & 1 ? ~(result >> 1) : result >> 1;
 
+    if (Math.abs(latitude) > 9e6 || Math.abs(longitude) > 18e6) return [];
     points.push({ lat: latitude / 1e5, lng: longitude / 1e5 });
   }
 
@@ -106,4 +131,18 @@ export const parseDurationSeconds = (duration: unknown): number | null => {
   if (!match?.[1]) return null;
   const seconds = Number(match[1]);
   return Number.isFinite(seconds) ? seconds : null;
+};
+
+export const isWithinTurnAlert = (meters: number, accuracy: number) => accuracy <= 35 && meters <= TURN_ALERT_METERS;
+
+export const nextNavigationStep = (point: LatLng, paths: LatLng[][], current: number, accuracy: number) => {
+  if (accuracy > 35) return current;
+  for (let i = current; i < paths.length - 1; i++) {
+    const end = paths[i].at(-1);
+    const next = positionOnRoute(point, paths[i + 1]);
+    const here = positionOnRoute(point, paths[i]);
+    if (next.distanceMeters <= 25 && (end && haversine(point, end) <= 18 || next.distanceMeters + 15 < here.distanceMeters)) continue;
+    return i;
+  }
+  return Math.max(0, paths.length - 1);
 };

@@ -5,31 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Globe, Clock, Timer, WifiOff, Compass } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ARRIVAL_ALERT_METERS as ALERT_RADIUS_M, bearingBetween, haversine, type LatLng } from "@/lib/navigation";
+import { invokeMaps, useTripNavigation, type GpsFix } from "@/hooks/useTripNavigation";
+import { TripNavigationControls } from "@/components/TripNavigationControls";
 
-interface LatLng { lat: number; lng: number; }
-
-const ALERT_RADIUS_M = 500;
 const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
 const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
-
-const haversine = (a: LatLng, b: LatLng) => {
-  const R = 6371000;
-  const toRad = (x: number) => (x * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
-};
-
-const bearingBetween = (a: LatLng, b: LatLng) => {
-  const toRad = (x: number) => (x * Math.PI) / 180;
-  const y = Math.sin(toRad(b.lng - a.lng)) * Math.cos(toRad(b.lat));
-  const x =
-    Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
-    Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(toRad(b.lng - a.lng));
-  return (Math.atan2(y, x) * 180) / Math.PI;
-};
 
 const STORAGE_KEY = "virtueyatra.tripmap.destination";
 const STOPS_KEY = "virtueyatra.tripmap.stops";
@@ -52,9 +35,9 @@ const writeJson = (key: string, value: unknown) => {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
 };
 
-const playAlarm = () => {
+const playAlarm = (ctx: AudioContext | null) => {
+  if (!ctx) return;
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const now = ctx.currentTime;
     [0, 0.5, 1].forEach((t) => {
       const osc = ctx.createOscillator();
@@ -69,7 +52,6 @@ const playAlarm = () => {
       osc.start(now + t);
       osc.stop(now + t + 0.45);
     });
-    setTimeout(() => ctx.close(), 2000);
   } catch (e) {
     console.error("alarm error", e);
   }
@@ -96,10 +78,13 @@ const loadGoogleMaps = (): Promise<void> => {
   return mapsLoadPromise;
 };
 
-interface Suggestion { id: string; primary: string; secondary: string; prediction: any; }
+interface Suggestion { id: string; primary: string; secondary: string; }
+type Place = { id: string; displayName?: { text?: string }; formattedAddress?: string; location?: { latitude: number; longitude: number }; internationalPhoneNumber?: string; nationalPhoneNumber?: string; websiteUri?: string; regularOpeningHours?: { weekdayDescriptions?: string[]; openNow?: boolean } };
 
 const TripMap = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { language } = useLanguage();
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [destination, setDestination] = useState<(LatLng & { label: string }) | null>(() => {
@@ -110,7 +95,7 @@ const TripMap = () => {
       return null;
     }
   });
-  const [userPos, setUserPos] = useState<LatLng | null>(null);
+  const [userPos, setUserPos] = useState<GpsFix | null>(null);
   const [tracking, setTracking] = useState(false);
   const [distance, setDistance] = useState<number | null>(null);
   const [bearing, setBearing] = useState<number | null>(null);
@@ -132,16 +117,19 @@ const TripMap = () => {
     hours?: string[];
     openNow?: boolean;
   } | null>(null);
-  const sessionTokenRef = useRef<any>(null);
-  const debounceRef = useRef<number | null>(null);
+  const sessionTokenRef = useRef<string | null>(null);
+  const [gpsError, setGpsError] = useState("");
+  const nav = useTripNavigation(destination, user?.id, userPos, online, language);
+  const following = nav.active && nav.route !== null && !nav.guide?.arrived;
+  const previousFix = useRef<GpsFix | null>(null);
+  const heading = useRef(0);
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const destMarkerRef = useRef<any>(null);
   const destCircleRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
-  const attractionMarkersRef = useRef<any[]>([]);
-  const attractionInfoRef = useRef<any>(null);
   const routePolylineRef = useRef<any>(null);
   const watchId = useRef<number | null>(null);
   const alertedRef = useRef(false);
@@ -196,6 +184,7 @@ const TripMap = () => {
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
+          clickableIcons: false,
         });
         setMapReady(true);
       })
@@ -203,7 +192,7 @@ const TripMap = () => {
         console.error(e);
       });
     return () => { cancelled = true; };
-  }, [toast, online]);
+  }, [online]);
 
   // Update destination marker + circle
   useEffect(() => {
@@ -241,133 +230,61 @@ const TripMap = () => {
     mapRef.current.setZoom(14);
   }, [destination, mapReady]);
 
-  // Load nearby itinerary places (top attractions) for the selected destination
+  // Fetch itinerary stops independently of map rendering.
+  useEffect(() => {
+    if (!destination || !online || !user?.id) return;
+    const controller = new AbortController();
+    invokeMaps<{ places?: Place[] }>({ action: "nearby", query: `top tourist attractions in ${destination.label.split(",")[0]}`.slice(0, 120), center: { lat: destination.lat, lng: destination.lng } }, controller.signal)
+      .then(({ places }) => {
+        if (controller.signal.aborted) return;
+        const nearby = (places ?? []).flatMap((p) => p.location ? [{ name: p.displayName?.text ?? "", address: p.formattedAddress, lat: p.location.latitude, lng: p.location.longitude }] : []);
+        setStops(nearby);
+      }).catch((error) => { if (!controller.signal.aborted) console.error("Nearby stops:", error.message); });
+    return () => controller.abort();
+  }, [destination, online, user?.id]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !destination) return;
+    const g = (window as any).google;
+    const info = new g.maps.InfoWindow();
+    const bounds = new g.maps.LatLngBounds();
+    bounds.extend(destination);
+    const path = [destination, ...stops];
+    const ocean = `hsl(${getComputedStyle(document.documentElement).getPropertyValue("--travel-ocean").trim()})`;
+    const markers = stops.map((stop, i) => {
+      bounds.extend(stop);
+      const marker = new g.maps.Marker({ map: mapRef.current, position: stop, title: stop.name, label: String(i + 1) });
+      marker.addListener("click", () => {
+        const content = document.createElement("div");
+        content.textContent = [stop.name, stop.address].filter(Boolean).join(" — ");
+        info.setContent(content);
+        info.open({ map: mapRef.current, anchor: marker });
+      });
+      return marker;
+    });
+    const polyline = new g.maps.Polyline({ path, map: mapRef.current, geodesic: true, strokeColor: ocean, strokeOpacity: 0.7, strokeWeight: 3 });
+    routePolylineRef.current = polyline;
+    if (!nav.active && stops.length) mapRef.current.fitBounds(bounds, 60);
+    const meters = stops.length ? path.slice(1).reduce((sum, stop, i) => sum + haversine(path[i], stop), 0) * 1.3 : null;
+    setRouteDistance(meters);
+    setRouteTimeMin(meters === null ? null : meters / 1000 / 35 * 60);
+    return () => { info.close(); markers.forEach((marker) => marker.setMap(null)); polyline.setMap(null); };
+  }, [destination, mapReady, stops, nav.active]);
+
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
+    routePolylineRef.current?.setVisible(!nav.active);
+    if (!nav.route) return;
     const g = (window as any).google;
-
-    // Clear previous attraction markers and route polyline
-    attractionMarkersRef.current.forEach((m) => m.setMap(null));
-    attractionMarkersRef.current = [];
-    routePolylineRef.current?.setMap(null);
-    routePolylineRef.current = null;
-    setRouteDistance(null);
-    setRouteTimeMin(null);
-    attractionInfoRef.current?.close?.();
-
-    if (!destination) return;
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const { Place } = await g.maps.importLibrary("places");
-        const { results } = await Place.searchByText({
-          textQuery: `top tourist attractions in ${destination.label.split(",")[0]}`,
-          fields: ["id", "displayName", "location", "formattedAddress", "types"],
-          locationBias: {
-            center: { lat: destination.lat, lng: destination.lng },
-            radius: 25000,
-          },
-          maxResultCount: 10,
-          region: "in",
-        });
-        if (cancelled || !results?.length) return;
-
-        // Save stops for offline use
-        const offlineStops: Stop[] = results
-          .filter((p: any) => p.location)
-          .map((p: any) => ({
-            name: String(p.displayName ?? ""),
-            address: p.formattedAddress ?? undefined,
-            lat: p.location.lat(),
-            lng: p.location.lng(),
-          }));
-        setStops(offlineStops);
-        const cache = readJson<Record<string, Stop[]>>(STOPS_KEY, {});
-        cache[destKey(destination)] = offlineStops;
-        writeJson(STOPS_KEY, cache);
-
-        const info = new g.maps.InfoWindow();
-        attractionInfoRef.current = info;
-        const bounds = new g.maps.LatLngBounds();
-        bounds.extend({ lat: destination.lat, lng: destination.lng });
-
-        results.forEach((p: any, i: number) => {
-          if (!p.location) return;
-          const pos = { lat: p.location.lat(), lng: p.location.lng() };
-          const marker = new g.maps.Marker({
-            map: mapRef.current,
-            position: pos,
-            title: p.displayName,
-            label: { text: String(i + 1), color: "#ffffff", fontSize: "12px", fontWeight: "600" },
-            icon: {
-              path: g.maps.SymbolPath.CIRCLE,
-              scale: 12,
-              fillColor: "#0ea5e9",
-              fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 2,
-            },
-          });
-          marker.addListener("click", () => {
-            info.setContent(
-              `<div style="font-size:13px;max-width:220px">
-                 <strong>${p.displayName ?? ""}</strong><br/>
-                 <span style="color:#666">${p.formattedAddress ?? ""}</span>
-               </div>`
-            );
-            info.open({ map: mapRef.current, anchor: marker });
-          });
-          attractionMarkersRef.current.push(marker);
-          bounds.extend(pos);
-        });
-
-        mapRef.current.fitBounds(bounds, 60);
-
-        // Draw a route polyline connecting destination → attractions in order
-        const path = [
-          { lat: destination.lat, lng: destination.lng },
-          ...attractionMarkersRef.current.map((m) => m.getPosition().toJSON()),
-        ];
-        routePolylineRef.current = new g.maps.Polyline({
-          path,
-          geodesic: true,
-          strokeColor: "#0ea5e9",
-          strokeOpacity: 0.7,
-          strokeWeight: 3,
-          icons: [
-            {
-              icon: { path: g.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 3, strokeColor: "#0ea5e9", fillColor: "#0ea5e9", fillOpacity: 1 },
-              offset: "100%",
-              repeat: "60px",
-            },
-          ],
-        });
-        routePolylineRef.current.setMap(mapRef.current);
-
-        // Compute total straight-line distance and estimate road distance + time
-        const allPoints = path;
-        let totalM = 0;
-        for (let i = 1; i < allPoints.length; i++) {
-          totalM += haversine(allPoints[i - 1], allPoints[i]);
-        }
-        const roadDistanceM = totalM * 1.3; // rough road-distance multiplier
-        const avgSpeedKmh = 35; // tourist driving in India (mixed roads)
-        const timeMin = (roadDistanceM / 1000 / avgSpeedKmh) * 60;
-        setRouteDistance(roadDistanceM);
-        setRouteTimeMin(timeMin);
-      } catch (e) {
-        console.error("nearby attractions error", e);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [destination, mapReady]);
-
+    const color = `hsl(${getComputedStyle(document.documentElement).getPropertyValue("--primary").trim()})`;
+    const line = new g.maps.Polyline({ map: mapRef.current, path: nav.route.path, strokeColor: color, strokeOpacity: 1, strokeWeight: 6, zIndex: 2 });
+    return () => line.setMap(null);
+  }, [mapReady, nav.active, nav.route, stops]);
 
   // Update user marker
   useEffect(() => {
-    if (!mapReady || !mapRef.current || !userPos) return;
+    if (!mapReady || !mapRef.current) return;
+    if (!userPos) { userMarkerRef.current?.setMap(null); userMarkerRef.current = null; return; }
     const g = (window as any).google;
     const pos = { lat: userPos.lat, lng: userPos.lng };
     if (!userMarkerRef.current) {
@@ -387,94 +304,56 @@ const TripMap = () => {
     } else {
       userMarkerRef.current.setPosition(pos);
     }
-  }, [userPos, mapReady]);
+    if (following && online && userPos.accuracy <= 70) {
+      const last = previousFix.current;
+      if (userPos.heading !== null && Number.isFinite(userPos.heading)) heading.current = userPos.heading;
+      else if (last && haversine(last, userPos) >= Math.max(8, userPos.accuracy)) heading.current = bearingBetween(last, userPos);
+      previousFix.current = userPos;
+      userMarkerRef.current.setIcon({ path: g.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 5, rotation: heading.current, fillColor: "#2563eb", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2 });
+      mapRef.current.panTo(pos);
+      if (mapRef.current.getZoom() < 16) mapRef.current.setZoom(17);
+      mapRef.current.setHeading(heading.current);
+    } else {
+      previousFix.current = null;
+      userMarkerRef.current.setIcon({ path: g.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#2563eb", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2 });
+      mapRef.current.setHeading(0);
+    }
+  }, [userPos, mapReady, following, online]);
 
-  // Fetch Places autocomplete suggestions (debounced)
   useEffect(() => {
-    if (!mapReady || !online) return;
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
     const q = query.trim();
-    if (q.length < 2) { setSuggestions([]); return; }
-
-    debounceRef.current = window.setTimeout(async () => {
+    if (!online || !user?.id || searching || q.length < 2 || q === destination?.label) { setSuggestions([]); return; }
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
       try {
-        const g = (window as any).google;
-        const { AutocompleteSuggestion, AutocompleteSessionToken } = await g.maps.importLibrary("places");
-        if (!sessionTokenRef.current) sessionTokenRef.current = new AutocompleteSessionToken();
-        const request: any = {
-          input: q,
-          sessionToken: sessionTokenRef.current,
-          includedRegionCodes: ["in"],
-        };
-        if (destination) {
-          request.locationBias = {
-            center: { lat: destination.lat, lng: destination.lng },
-            radius: 50000,
-          };
-        }
-        const { suggestions: results } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
-        const mapped: Suggestion[] = (results || [])
-          .filter((s: any) => s.placePrediction)
-          .map((s: any, i: number) => ({
-            id: s.placePrediction.placeId || String(i),
-            primary: s.placePrediction.mainText?.text || s.placePrediction.text?.text || "",
-            secondary: s.placePrediction.secondaryText?.text || "",
-            prediction: s.placePrediction,
-          }));
-        setSuggestions(mapped);
-        setShowSuggestions(true);
-      } catch (e) {
-        console.error("autocomplete error", e);
+        const token = sessionTokenRef.current ?? crypto.randomUUID();
+        sessionTokenRef.current = token;
+        const data = await invokeMaps<{ suggestions?: { placePrediction?: { placeId: string; text?: { text?: string }; structuredFormat?: { mainText?: { text?: string }; secondaryText?: { text?: string } } } }[] }>({ action: "autocomplete", input: q, sessionToken: token, center: userPos ? { lat: userPos.lat, lng: userPos.lng } : destination }, controller.signal);
+        if (controller.signal.aborted) return;
+        setSuggestions((data.suggestions ?? []).flatMap(({ placePrediction: place }) => place?.placeId ? [{ id: place.placeId, primary: place.structuredFormat?.mainText?.text ?? place.text?.text ?? "", secondary: place.structuredFormat?.secondaryText?.text ?? "" }] : []));
+        setShowSuggestions(document.activeElement === searchInputRef.current);
+      } catch (error) {
+        if (!controller.signal.aborted) console.error("Autocomplete:", error);
       }
-    }, 250);
-
-    return () => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    };
-  }, [query, mapReady, destination]);
+    }, 300);
+    return () => { window.clearTimeout(timeout); controller.abort(); };
+  }, [query, online, user?.id, searching, destination]);
 
   const selectSuggestion = async (s: Suggestion) => {
-    setShowSuggestions(false);
-    setSearching(true);
-    setPlaceDetails(null);
+    setShowSuggestions(false); setSuggestions([]); setSearching(true); setPlaceDetails(null);
+    const sessionToken = sessionTokenRef.current ?? undefined;
+    sessionTokenRef.current = null;
     try {
-      const place = s.prediction.toPlace();
-      await place.fetchFields({
-        fields: [
-          "location",
-          "displayName",
-          "formattedAddress",
-          "internationalPhoneNumber",
-          "nationalPhoneNumber",
-          "websiteURI",
-          "regularOpeningHours",
-        ],
-      });
-      const loc = place.location;
-      if (!loc) throw new Error("No location");
-      const label = place.formattedAddress || place.displayName || s.primary;
-      setDestination({ lat: loc.lat(), lng: loc.lng(), label });
+      const place = await invokeMaps<Place>({ action: "details", placeId: s.id, sessionToken });
+      if (!place.location) throw new Error("No location found.");
+      const label = place.formattedAddress || place.displayName?.text || s.primary;
+      setDestination({ lat: place.location.latitude, lng: place.location.longitude, label });
       setQuery(label);
       alertedRef.current = false;
-      sessionTokenRef.current = null; // end session after selection
-
-      const hours = place.regularOpeningHours?.weekdayDescriptions as string[] | undefined;
-      const websiteRaw = place.websiteURI as unknown;
-      const website = typeof websiteRaw === "string" ? websiteRaw : websiteRaw?.toString?.();
-      setPlaceDetails({
-        address: place.formattedAddress || undefined,
-        phone: place.internationalPhoneNumber || place.nationalPhoneNumber || undefined,
-        website: website || undefined,
-        hours,
-        openNow: place.regularOpeningHours?.openNow,
-      });
-
-      toast({ title: "Destination set 📍", description: s.primary });
-    } catch (e) {
-      toast({ title: "Couldn't load place", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" });
-    } finally {
-      setSearching(false);
-    }
+      setPlaceDetails({ address: place.formattedAddress, phone: place.internationalPhoneNumber || place.nationalPhoneNumber, website: /^https?:\/\//i.test(place.websiteUri ?? "") ? place.websiteUri : undefined, hours: place.regularOpeningHours?.weekdayDescriptions, openNow: place.regularOpeningHours?.openNow });
+    } catch (error) {
+      toast({ title: "Couldn’t load place", description: error instanceof Error ? error.message : "Try again.", variant: "destructive" });
+    } finally { setSearching(false); }
   };
 
   const handleSearch = async () => {
@@ -495,71 +374,70 @@ const TripMap = () => {
       return;
     }
     if (!query.trim()) return;
-    // If suggestions are available, pick the first one
-    if (suggestions.length > 0) {
-      await selectSuggestion(suggestions[0]);
+    if (!user) {
+      toast({ title: "Sign in to search for a new destination", variant: "destructive" });
       return;
     }
-    setSearching(true);
+    if (showSuggestions && suggestions.length > 0) { await selectSuggestion(suggestions[0]); return; }
+    setSearching(true); setShowSuggestions(false); setSuggestions([]);
+    sessionTokenRef.current = null;
     try {
-      const { data, error } = await supabase.functions.invoke("geocode", {
-        body: { address: `${query.trim()}, India` },
-      });
-      if (error) throw error;
-      const r = data?.result;
-      if (!r) {
-        toast({ title: "Not found", description: "Try a more specific place name.", variant: "destructive" });
-        return;
-      }
-      setDestination({ lat: r.lat, lng: r.lng, label: r.label });
-      setPlaceDetails({ address: r.label });
+      const { places } = await invokeMaps<{ places?: Place[] }>({ action: "search", query: query.trim() });
+      const result = places?.find((place) => place.location);
+      if (!result?.location) throw new Error("Try a more specific place name.");
+      const label = result.formattedAddress || result.displayName?.text || query.trim();
+      setDestination({ lat: result.location.latitude, lng: result.location.longitude, label });
+      setQuery(label);
+      setPlaceDetails({ address: result.formattedAddress });
       alertedRef.current = false;
-      toast({ title: "Destination set 📍", description: r.label.split(",").slice(0, 2).join(",") });
-    } catch (e) {
-      toast({ title: "Search failed", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" });
-    } finally {
-      setSearching(false);
-    }
+    } catch (error) {
+      toast({ title: "Search failed", description: error instanceof Error ? error.message : "Try again.", variant: "destructive" });
+    } finally { setSearching(false); }
   };
 
   const stopTracking = useCallback(() => {
-    if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
-    setTracking(false);
+    if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+    watchId.current = null;
+    setTracking(false); setUserPos(null); setDistance(null); setBearing(null);
   }, []);
 
+  const alarmContext = useRef<AudioContext | null>(null);
   const startTracking = useCallback(() => {
-    if (!("geolocation" in navigator)) {
-      toast({ title: "Unavailable", description: "Geolocation not supported in this browser.", variant: "destructive" });
-      return;
-    }
-    if (alertsOn && "Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
+    if (!navigator.geolocation) { setGpsError("Location is not available in this browser."); return false; }
+    setGpsError("");
+    if (!alarmContext.current && window.AudioContext) alarmContext.current = new AudioContext();
+    void alarmContext.current?.resume().catch(() => undefined);
+    if (watchId.current !== null) return true;
     watchId.current = navigator.geolocation.watchPosition(
-      (p) => setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      (err) => {
-        toast({ title: "Location error", description: err.message, variant: "destructive" });
-        stopTracking();
-      },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+      ({ coords }) => { setGpsError(""); setUserPos({ lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy, heading: coords.heading }); },
+      (err) => { setGpsError(err.message); if (err.code === 1) stopTracking(); },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
     );
     setTracking(true);
-    toast({ title: "Tracking started 🛰️", description: "We'll alert you 500m before arrival." });
-  }, [alertsOn, toast, stopTracking]);
+    return true;
+  }, [stopTracking]);
 
-  useEffect(() => () => stopTracking(), [stopTracking]);
+  useEffect(() => () => {
+    if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+    void alarmContext.current?.close().catch(() => undefined);
+    watchId.current = null; alarmContext.current = null;
+  }, []);
+
+  const startNavigation = () => {
+    if (!startTracking()) return;
+    window.speechSynthesis?.resume();
+    if (nav.active) nav.retry(); else nav.setActive(true);
+  };
+  const exitNavigation = () => { nav.setActive(false); stopTracking(); setGpsError(""); };
 
   useEffect(() => {
     if (!destination || !userPos) return;
     const d = haversine(userPos, destination);
     setDistance(d);
     setBearing(bearingBetween(userPos, destination));
-    if (alertsOn && d <= ALERT_RADIUS_M && !alertedRef.current) {
+    if (alertsOn && userPos.accuracy <= 70 && d <= ALERT_RADIUS_M && !alertedRef.current) {
       alertedRef.current = true;
-      playAlarm();
+      playAlarm(alarmContext.current);
       toast({
         title: "🔔 Almost there!",
         description: `You're within ${Math.round(d)}m of ${destination.label.split(",")[0]}. Get ready!`,
@@ -592,11 +470,14 @@ const TripMap = () => {
             <div className="flex-1 flex gap-2 relative">
               <div className="flex-1 relative">
                 <Input
+                  ref={searchInputRef}
+                  maxLength={120}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  onKeyDown={(e) => e.key === "Enter" && !searching && !nav.active && handleSearch()}
+                  disabled={nav.active}
                   placeholder="Search a place (e.g. Charminar, Hyderabad)"
                   className="w-full"
                 />
@@ -622,7 +503,7 @@ const TripMap = () => {
                   </div>
                 )}
               </div>
-              <Button onClick={handleSearch} disabled={searching} className="bg-gradient-to-r from-primary to-travel-ocean">
+              <Button onClick={handleSearch} aria-label="Search destination" disabled={searching || nav.active} className="bg-gradient-to-r from-primary to-travel-ocean">
                 {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               </Button>
             </div>
@@ -630,13 +511,13 @@ const TripMap = () => {
               <Button
                 variant={tracking ? "destructive" : "default"}
                 onClick={tracking ? stopTracking : startTracking}
-                disabled={!destination}
+                disabled={!destination || nav.active}
                 className={!tracking ? "bg-gradient-to-r from-secondary to-accent" : ""}
               >
                 <Navigation className="w-4 h-4 mr-2" />
                 {tracking ? "Stop" : "Start tracking"}
               </Button>
-              <Button variant="outline" onClick={() => setAlertsOn((v) => !v)} title="Toggle 500m alarm">
+              <Button variant="outline" onClick={() => setAlertsOn((v) => !v)} title="Toggle 500m alarm" aria-label="Toggle 500m alarm" aria-pressed={alertsOn}>
                 {alertsOn ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
               </Button>
             </div>
@@ -647,7 +528,7 @@ const TripMap = () => {
               {destination && (
                 <span className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
-                  <span className="font-medium truncate max-w-[300px]">{destination.label.split(",").slice(0, 3).join(", ")}</span>
+                  <span className="font-medium truncate max-w-[min(300px,70vw)]">{destination.label.split(",").slice(0, 3).join(", ")}</span>
                 </span>
               )}
               {distance !== null && (
@@ -737,7 +618,9 @@ const TripMap = () => {
             </div>
           )}
 
+          {gpsError && <p className="px-4 py-2 text-sm text-destructive" role="alert">{gpsError}</p>}
           <div className="relative">
+            {destination && <TripNavigationControls overlay nav={nav} destination={destination} fix={userPos} online={online} signedIn={Boolean(user)} onStart={startNavigation} onExit={exitNavigation} />}
             <div ref={mapDivRef} className={`h-[500px] w-full bg-muted ${online ? "" : "hidden"}`} />
             {!online && (
               <div className="h-[500px] w-full bg-muted/40 overflow-y-auto flex flex-col items-center gap-5 p-6 text-center">
@@ -824,7 +707,7 @@ const TripMap = () => {
                           key={destKey(r)}
                           size="sm"
                           variant={destination && destKey(r) === destKey(destination) ? "default" : "outline"}
-                          onClick={() => setDestination(r)}
+                          onClick={() => { setDestination(r); alertedRef.current = false; }}
                         >
                           <MapPin className="w-3 h-3 mr-1" />
                           {r.label.split(",")[0]}
@@ -836,6 +719,7 @@ const TripMap = () => {
               </div>
             )}
           </div>
+          {destination && <TripNavigationControls nav={nav} destination={destination} fix={userPos} online={online} signedIn={Boolean(user)} onStart={startNavigation} onExit={exitNavigation} />}
         </Card>
       </div>
     </section>

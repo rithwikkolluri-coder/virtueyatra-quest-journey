@@ -12,7 +12,7 @@ const requestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("details"), placeId: z.string().trim().min(3).max(256).regex(/^(places\/)?[A-Za-z0-9_-]+$/), sessionToken: z.string().uuid().optional() }),
   z.object({ action: z.literal("search"), query: z.string().trim().min(2).max(120), center: coordinateSchema.optional() }),
   z.object({ action: z.literal("nearby"), query: z.string().trim().min(2).max(120), center: coordinateSchema }),
-  z.object({ action: z.literal("route"), origin: coordinateSchema, destination: coordinateSchema, mode: z.enum(["DRIVE", "WALK", "TRANSIT"]) }),
+  z.object({ action: z.literal("route"), origin: coordinateSchema, destination: coordinateSchema, mode: z.enum(["DRIVE", "WALK", "TRANSIT"]), language: z.enum(["en", "hi", "te"]).default("en") }),
 ]);
 
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
@@ -102,7 +102,8 @@ Deno.serve(async (req) => {
           destination,
           travelMode: request.mode,
           ...(request.mode === "DRIVE" ? { routingPreference: "TRAFFIC_AWARE" } : {}),
-          languageCode: "en",
+          languageCode: `${request.language}-IN`,
+          polylineQuality: "HIGH_QUALITY",
         }),
       });
     }
@@ -111,14 +112,21 @@ Deno.serve(async (req) => {
       const details = await upstream.text();
       console.error(`Google Maps request failed [${upstream.status}]: ${details}`);
       if (upstream.status === 403) {
-        return jsonResponse({ error: "Google Maps denied this request. Check the connected Google Maps API access and billing settings.", status: upstream.status, details }, upstream.status);
+        let reason: string | undefined;
+        try { reason = JSON.parse(details)?.error?.details?.find((item: { reason?: string }) => item.reason)?.reason; } catch { /* not JSON */ }
+        const error = reason === "API_KEY_HTTP_REFERRER_BLOCKED"
+          ? 'Google Maps server key is referrer-restricted. In Google Cloud Console, set its application restrictions to "None" or "IP addresses".'
+          : reason === "API_KEY_SERVICE_BLOCKED"
+            ? "The Google Maps server key does not allow this API. In Google Cloud Console, add it to the key’s allowed APIs."
+            : "Google Maps denied this request. Check the connected Google Maps API access and billing settings.";
+        return jsonResponse({ error, status: upstream.status, details }, upstream.status);
       }
       return jsonResponse({ error: "Google Maps request failed.", status: upstream.status, details }, upstream.status);
     }
 
     const data = await upstream.json();
     if ((request.action === "route") && !data.routes?.[0]?.polyline?.encodedPolyline) {
-      return jsonResponse({ error: "No drivable or walkable route was found for this trip." }, 404);
+      return jsonResponse({ error: "No route was found for this travel mode." }, 404);
     }
     return jsonResponse(data);
   } catch (error) {

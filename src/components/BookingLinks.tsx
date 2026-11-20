@@ -27,7 +27,7 @@ const bookingOptions = [
   {
     icon: TrainFront,
     labelKey: "booking.trains",
-    href: "https://www.irctc.co.in",
+    href: "https://www.irctc.co.in/nget/train-search",
     color: "from-green-500 to-emerald-500",
     hoverBg: "hover:bg-green-500/10",
     borderColor: "border-green-500/30",
@@ -36,7 +36,7 @@ const bookingOptions = [
   {
     icon: Hotel,
     labelKey: "booking.hotels",
-    href: "https://www.oyorooms.com",
+    href: "https://www.oyorooms.com/india/",
     color: "from-purple-500 to-violet-500",
     hoverBg: "hover:bg-purple-500/10",
     borderColor: "border-purple-500/30",
