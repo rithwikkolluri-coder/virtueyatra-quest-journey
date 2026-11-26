@@ -138,7 +138,7 @@ export const isWithinTurnAlert = (meters: number, accuracy: number) => accuracy 
 export const nextNavigationStep = (point: LatLng, paths: LatLng[][], current: number, accuracy: number) => {
   if (accuracy > 35) return current;
   for (let i = current; i < paths.length - 1; i++) {
-    const end = paths[i].at(-1);
+    const end = paths[i][paths[i].length - 1];
     const next = positionOnRoute(point, paths[i + 1]);
     const here = positionOnRoute(point, paths[i]);
     if (next.distanceMeters <= 25 && (end && haversine(point, end) <= 18 || next.distanceMeters + 15 < here.distanceMeters)) continue;

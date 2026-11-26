@@ -113,7 +113,7 @@ export function useTripNavigation(destination: LatLng | null, userId: string | u
     }
     const total = positionOnRoute(route.path[0], route.path).remainingMeters;
     const fraction = total > 0 ? Math.min(1, position.remainingMeters / total) : 0;
-    const end = route.path.at(-1);
+    const end = route.path[route.path.length - 1];
     const done = fix.accuracy <= 30 && position.remainingMeters <= 30 && Boolean(end && haversine(fix, end) <= 30);
     const current = nextNavigationStep(fix, route.steps.map((step) => step.path), index.current, fix.accuracy);
     index.current = current;
