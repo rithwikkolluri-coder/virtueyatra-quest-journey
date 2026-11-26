@@ -475,8 +475,24 @@ const TripMap = () => {
     watchId.current = null; alarmContext.current = null;
   }, []);
 
+  // Ask for the traveller's location as soon as the map opens so the blue dot and navigation are ready
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const here = { lat: coords.latitude, lng: coords.longitude };
+        setUserPos((prev) => prev ?? { ...here, accuracy: coords.accuracy, heading: coords.heading });
+        setOrigin((prev) => prev ?? { ...here, label: "My location" });
+        setFromQuery((prev) => prev || "My location");
+      },
+      (err) => setGpsError(err.message),
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  }, []);
+
   const startNavigation = () => {
     if (!startTracking()) return;
+    if (userPos) { setOrigin({ lat: userPos.lat, lng: userPos.lng, label: "My location" }); setFromQuery("My location"); }
     window.speechSynthesis?.resume();
     if (nav.active) nav.retry(); else nav.setActive(true);
   };
