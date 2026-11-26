@@ -3,12 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Globe, Clock, Timer, WifiOff, Compass, LocateFixed, Route as RouteIcon } from "lucide-react";
+import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Globe, Clock, Timer, WifiOff, Compass } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Label } from "@/components/ui/label";
-import { ARRIVAL_ALERT_METERS as ALERT_RADIUS_M, bearingBetween, decodePolyline, haversine, parseDurationSeconds, type LatLng } from "@/lib/navigation";
+import { ARRIVAL_ALERT_METERS as ALERT_RADIUS_M, bearingBetween, haversine, type LatLng } from "@/lib/navigation";
 import { invokeMaps, useTripNavigation, type GpsFix } from "@/hooks/useTripNavigation";
 import { TripNavigationControls } from "@/components/TripNavigationControls";
 
@@ -82,20 +81,11 @@ const loadGoogleMaps = (): Promise<void> => {
 interface Suggestion { id: string; primary: string; secondary: string; }
 type Place = { id: string; displayName?: { text?: string }; formattedAddress?: string; location?: { latitude: number; longitude: number }; internationalPhoneNumber?: string; nationalPhoneNumber?: string; websiteUri?: string; regularOpeningHours?: { weekdayDescriptions?: string[]; openNow?: boolean } };
 
-const mapCopy: Record<string, { from: string; to: string; fromPlaceholder: string; toPlaceholder: string; currentLocation: string; useCurrentLocation: string; showRoute: string; routeLoading: string; routeError: string; missingFrom: string; signInToSearch: string }> = {
-  en: { from: "From", to: "To", fromPlaceholder: "Search starting place", toPlaceholder: "Search destination", currentLocation: "Your location", useCurrentLocation: "Use current location", showRoute: "Show route", routeLoading: "Finding route…", routeError: "Could not find a route.", missingFrom: "Set a starting place first.", signInToSearch: "Sign in to search for a place." },
-  hi: { from: "यहाँ से", to: "यहाँ तक", fromPlaceholder: "शुरुआती जगह खोजें", toPlaceholder: "गंतव्य खोजें", currentLocation: "आपकी लोकेशन", useCurrentLocation: "मौजूदा लोकेशन लें", showRoute: "रास्ता दिखाएँ", routeLoading: "रास्ता खोज रहे हैं…", routeError: "रास्ता नहीं मिला।", missingFrom: "पहले शुरुआती जगह चुनें।", signInToSearch: "जगह खोजने के लिए साइन इन करें।" },
-  te: { from: "ఎక్కడి నుండి", to: "ఎక్కడికి", fromPlaceholder: "ప్రారంభ స్థలాన్ని వెతకండి", toPlaceholder: "గమ్యస్థానాన్ని వెతకండి", currentLocation: "మీ ప్రస్తుత స్థానం", useCurrentLocation: "ప్రస్తుత స్థానాన్ని వాడండి", showRoute: "మార్గం చూపించు", routeLoading: "మార్గాన్ని వెతుకుతున్నాం…", routeError: "మార్గం కనబడలేదు.", missingFrom: "ముందుగా ప్రారంభ స్థలాన్ని ఎంచుకోండి.", signInToSearch: "స్థలాన్ని వెతకడానికి సైన్ ఇన్ చేయండి." },
-};
-
 const TripMap = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { language } = useLanguage();
-  const labels = mapCopy[language] ?? mapCopy.en;
   const [query, setQuery] = useState("");
-  const [originQuery, setOriginQuery] = useState("");
-  const [origin, setOrigin] = useState<(LatLng & { label: string }) | null>(null);
   const [searching, setSearching] = useState(false);
   const [destination, setDestination] = useState<(LatLng & { label: string }) | null>(() => {
     try {
@@ -116,8 +106,6 @@ const TripMap = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeTimeMin, setRouteTimeMin] = useState<number | null>(null);
-  const [routePreview, setRoutePreview] = useState<{ path: LatLng[]; meters: number; seconds: number } | null>(null);
-  const [routeSearching, setRouteSearching] = useState(false);
   const [stops, setStops] = useState<Stop[]>([]);
   const [recents, setRecents] = useState<(LatLng & { label: string })[]>(() =>
     readJson<(LatLng & { label: string })[]>(RECENTS_KEY, [])
@@ -132,24 +120,19 @@ const TripMap = () => {
   const sessionTokenRef = useRef<string | null>(null);
   const [gpsError, setGpsError] = useState("");
   const nav = useTripNavigation(destination, user?.id, userPos, online, language);
-  const effectiveOrigin = origin ?? (userPos ? { lat: userPos.lat, lng: userPos.lng, label: labels.currentLocation } : null);
   const following = nav.active && nav.route !== null && !nav.guide?.arrived;
   const previousFix = useRef<GpsFix | null>(null);
   const heading = useRef(0);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const originInputRef = useRef<HTMLInputElement>(null);
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const destMarkerRef = useRef<any>(null);
   const destCircleRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const routePolylineRef = useRef<any>(null);
-  const directionsPolylineRef = useRef<any>(null);
-  const originMarkerRef = useRef<any>(null);
   const watchId = useRef<number | null>(null);
   const alertedRef = useRef(false);
-  const [activeSearchField, setActiveSearchField] = useState<"origin" | "destination">("destination");
 
   // Online/offline awareness
   useEffect(() => {
