@@ -7,7 +7,7 @@ import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Gl
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ARRIVAL_ALERT_METERS as ALERT_RADIUS_M, bearingBetween, haversine, type LatLng } from "@/lib/navigation";
+import { ARRIVAL_ALERT_METERS as ALERT_RADIUS_M, bearingBetween, decodePolyline, haversine, parseDurationSeconds, type LatLng } from "@/lib/navigation";
 import { invokeMaps, useTripNavigation, type GpsFix } from "@/hooks/useTripNavigation";
 import { TripNavigationControls } from "@/components/TripNavigationControls";
 
@@ -119,6 +119,10 @@ const TripMap = () => {
   } | null>(null);
   const sessionTokenRef = useRef<string | null>(null);
   const [gpsError, setGpsError] = useState("");
+  const [fromQuery, setFromQuery] = useState("");
+  const [origin, setOrigin] = useState<(LatLng & { label: string }) | null>(null);
+  const [fromBusy, setFromBusy] = useState(false);
+  const [tripRoute, setTripRoute] = useState<{ meters: number; seconds: number } | null>(null);
   const nav = useTripNavigation(destination, user?.id, userPos, online, language);
   const following = nav.active && nav.route !== null && !nav.guide?.arrived;
   const previousFix = useRef<GpsFix | null>(null);
@@ -280,6 +284,54 @@ const TripMap = () => {
     const line = new g.maps.Polyline({ map: mapRef.current, path: nav.route.path, strokeColor: color, strokeOpacity: 1, strokeWeight: 6, zIndex: 2 });
     return () => line.setMap(null);
   }, [mapReady, nav.active, nav.route, stops]);
+
+  // From -> To preview route
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !origin) { setTripRoute(null); return; }
+    const g = (window as any).google;
+    const marker = new g.maps.Marker({ map: mapRef.current, position: origin, title: `From: ${origin.label}`, label: { text: "A", color: "#ffffff", fontWeight: "700" } });
+    if (!destination || nav.active || !online || !user?.id) return () => marker.setMap(null);
+    const controller = new AbortController();
+    let line: any = null;
+    invokeMaps<{ routes?: { polyline?: { encodedPolyline?: string }; distanceMeters?: number; duration?: string }[] }>({ action: "route", origin: { lat: origin.lat, lng: origin.lng }, destination: { lat: destination.lat, lng: destination.lng }, mode: "DRIVE", language }, controller.signal)
+      .then((data) => {
+        const r = data.routes?.[0];
+        const path = decodePolyline(r?.polyline?.encodedPolyline ?? "");
+        if (controller.signal.aborted || path.length < 2) return;
+        const color = `hsl(${getComputedStyle(document.documentElement).getPropertyValue("--primary").trim()})`;
+        line = new g.maps.Polyline({ map: mapRef.current, path, strokeColor: color, strokeOpacity: 0.9, strokeWeight: 5, zIndex: 1 });
+        const bounds = new g.maps.LatLngBounds(); path.forEach((p) => bounds.extend(p)); mapRef.current.fitBounds(bounds, 60);
+        setTripRoute({ meters: r?.distanceMeters ?? 0, seconds: parseDurationSeconds(r?.duration) ?? 0 });
+      })
+      .catch((e) => { if (!controller.signal.aborted) toast({ title: "Couldn’t load route", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" }); });
+    return () => { controller.abort(); marker.setMap(null); line?.setMap(null); };
+  }, [origin, destination, mapReady, nav.active, online, user?.id, language, toast]);
+
+  const searchFrom = async () => {
+    const q = fromQuery.trim();
+    if (!q) { setOrigin(null); return; }
+    if (!user) { toast({ title: "Sign in to search a starting point", variant: "destructive" }); return; }
+    setFromBusy(true);
+    try {
+      const { places } = await invokeMaps<{ places?: Place[] }>({ action: "search", query: q });
+      const hit = places?.find((p) => p.location);
+      if (!hit?.location) throw new Error("Try a more specific place name.");
+      const label = hit.formattedAddress || hit.displayName?.text || q;
+      setOrigin({ lat: hit.location.latitude, lng: hit.location.longitude, label });
+      setFromQuery(label);
+    } catch (e) {
+      toast({ title: "Search failed", description: e instanceof Error ? e.message : "Try again.", variant: "destructive" });
+    } finally { setFromBusy(false); }
+  };
+
+  const useMyLocationAsFrom = () => {
+    if (userPos) { setOrigin({ lat: userPos.lat, lng: userPos.lng, label: "My location" }); setFromQuery("My location"); return; }
+    navigator.geolocation?.getCurrentPosition(
+      ({ coords }) => { setOrigin({ lat: coords.latitude, lng: coords.longitude, label: "My location" }); setFromQuery("My location"); },
+      (err) => toast({ title: "Location unavailable", description: err.message, variant: "destructive" }),
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  };
 
   // Update user marker
   useEffect(() => {
@@ -466,6 +518,22 @@ const TripMap = () => {
         </div>
 
         <Card className="overflow-hidden border-border/50 shadow-2xl">
+          <div className="px-4 md:px-6 pt-4 md:pt-6 bg-card flex flex-col md:flex-row gap-2 md:items-center">
+            <span className="text-sm font-semibold w-12 shrink-0">From</span>
+            <div className="flex-1 flex gap-2">
+              <Input maxLength={120} value={fromQuery} onChange={(e) => setFromQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !fromBusy && searchFrom()} disabled={nav.active} placeholder="Starting point (e.g. Secunderabad Station)" aria-label="From location" />
+              <Button onClick={searchFrom} aria-label="Search starting point" disabled={fromBusy || nav.active} variant="secondary">
+                {fromBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              </Button>
+              <Button onClick={useMyLocationAsFrom} variant="outline" disabled={nav.active} aria-label="Use my location as starting point">
+                <Navigation className="w-4 h-4" /><span className="hidden sm:inline ml-1">My location</span>
+              </Button>
+            </div>
+            {tripRoute && destination && (
+              <Badge variant="secondary" className="shrink-0">{(tripRoute.meters / 1000).toFixed(1)} km · {Math.round(tripRoute.seconds / 60)} min</Badge>
+            )}
+          </div>
+          <div className="px-4 md:px-6 pt-3 bg-card"><span className="text-sm font-semibold">To</span></div>
           <div className="p-4 md:p-6 bg-card border-b border-border flex flex-col md:flex-row gap-3 md:items-center">
             <div className="flex-1 flex gap-2 relative">
               <div className="flex-1 relative">
