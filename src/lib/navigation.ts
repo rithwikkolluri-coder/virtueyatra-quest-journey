@@ -34,6 +34,15 @@ export type TravelMode = "DRIVE" | "WALK" | "TRANSIT";
 export const TURN_ALERT_METERS = 100;
 export const ARRIVAL_ALERT_METERS = 500;
 
+export const isGeolocationPermissionDenied = (code: number) => code === 1;
+
+export const geolocationErrorMessage = (code: number) => {
+  if (code === 1) return "Location access is blocked. Allow location access in your browser settings, then try again.";
+  if (code === 2) return "Your location could not be determined. Check that location services are enabled and try again.";
+  if (code === 3) return "Finding your location timed out. Move to an open area and try again.";
+  return "Location is unavailable. Try again.";
+};
+
 export const shouldReroute = (distance: number, accuracy: number, consecutive: number) =>
   accuracy <= 35 && distance - accuracy > 50 && consecutive >= 3;
 

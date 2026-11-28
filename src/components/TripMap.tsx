@@ -7,7 +7,7 @@ import { MapPin, Search, Navigation, BellRing, Loader2, Bell, BellOff, Phone, Gl
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ARRIVAL_ALERT_METERS as ALERT_RADIUS_M, bearingBetween, decodePolyline, haversine, parseDurationSeconds, type LatLng } from "@/lib/navigation";
+import { ARRIVAL_ALERT_METERS as ALERT_RADIUS_M, bearingBetween, decodePolyline, geolocationErrorMessage, haversine, isGeolocationPermissionDenied, parseDurationSeconds, type LatLng } from "@/lib/navigation";
 import { invokeMaps, useTripNavigation, type GpsFix } from "@/hooks/useTripNavigation";
 import { TripNavigationControls } from "@/components/TripNavigationControls";
 
@@ -328,7 +328,7 @@ const TripMap = () => {
     if (userPos) { setOrigin({ lat: userPos.lat, lng: userPos.lng, label: "My location" }); setFromQuery("My location"); return; }
     navigator.geolocation?.getCurrentPosition(
       ({ coords }) => { setOrigin({ lat: coords.latitude, lng: coords.longitude, label: "My location" }); setFromQuery("My location"); },
-      (err) => toast({ title: "Location unavailable", description: err.message, variant: "destructive" }),
+      (err) => toast({ title: "Location unavailable", description: geolocationErrorMessage(err.code), variant: "destructive" }),
       { enableHighAccuracy: true, timeout: 15000 },
     );
   };
@@ -462,12 +462,18 @@ const TripMap = () => {
     if (watchId.current !== null) return true;
     watchId.current = navigator.geolocation.watchPosition(
       ({ coords }) => { setGpsError(""); setUserPos({ lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy, heading: coords.heading }); },
-      (err) => { setGpsError(err.message); if (err.code === 1) stopTracking(); },
+      (err) => {
+        setGpsError(geolocationErrorMessage(err.code));
+        if (isGeolocationPermissionDenied(err.code)) {
+          stopTracking();
+          nav.setActive(false);
+        }
+      },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
     );
     setTracking(true);
     return true;
-  }, [stopTracking]);
+  }, [stopTracking, nav.setActive]);
 
   useEffect(() => () => {
     if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);

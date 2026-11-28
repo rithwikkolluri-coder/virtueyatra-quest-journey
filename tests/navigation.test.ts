@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ARRIVAL_ALERT_METERS, decodePolyline, googleMapsDirections, haversine, isWithinTurnAlert, nextNavigationStep, parseDurationSeconds, positionOnRoute, shouldReroute } from "../src/lib/navigation";
+import { ARRIVAL_ALERT_METERS, decodePolyline, geolocationErrorMessage, googleMapsDirections, haversine, isGeolocationPermissionDenied, isWithinTurnAlert, nextNavigationStep, parseDurationSeconds, positionOnRoute, shouldReroute } from "../src/lib/navigation";
 
 describe("navigation geometry", () => {
   test("calculates straight-line distance in meters", () => {
@@ -60,5 +60,19 @@ describe("navigation geometry", () => {
     expect(link.searchParams.get("origin")).toBe("17.37,78.49");
     expect(link.searchParams.get("destination")).toBe("17.36,78.47");
     expect(link.searchParams.get("travelmode")).toBe("walking");
+  });
+});
+
+describe("live location access", () => {
+  test("explains how to restore location access when permission is denied", () => {
+    expect(isGeolocationPermissionDenied(1)).toBe(true);
+    expect(geolocationErrorMessage(1)).toBe("Location access is blocked. Allow location access in your browser settings, then try again.");
+  });
+
+  test("keeps unavailable-location and timeout errors separate from denied permission", () => {
+    expect(isGeolocationPermissionDenied(2)).toBe(false);
+    expect(isGeolocationPermissionDenied(3)).toBe(false);
+    expect(geolocationErrorMessage(2)).toContain("location services");
+    expect(geolocationErrorMessage(3)).toContain("timed out");
   });
 });
