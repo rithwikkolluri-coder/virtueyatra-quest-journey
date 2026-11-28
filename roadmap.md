@@ -1,6 +1,5 @@
 # Roadmap
 
-- [x] Record the first ad campaign's confirmed location and budget preference in its brief.
 - [x] Place booking actions beside the trip planner on larger screens.
 - [x] Stack booking actions below the planner on smaller screens.
 - [x] Verify planner, booking links, and responsive layouts.
